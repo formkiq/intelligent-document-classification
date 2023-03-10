@@ -1,0 +1,17 @@
+version: "3.7"
+
+services:
+
+  api_ml:
+    build: ./api_ml
+    container_name: api_ml
+    restart: always
+    expose:
+      - 5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - documents:/app/documents
+
+volumes:
+  documents:

@@ -1,0 +1,11 @@
+micronaut:
+  application:
+    name: idc
+netty:
+  default:
+    allocator:
+      max-order: 3
+
+# kafka:
+#   bootstrap:
+#     servers: localhost:63559
