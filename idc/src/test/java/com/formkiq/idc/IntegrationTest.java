@@ -5,6 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -31,29 +35,34 @@ class IntegrationTest extends AbstractTest {
 	EmbeddedApplication<?> application;
 
 	@Inject
-	TesseractProducer producer;
-
-	@Inject
 	TesseractMessageConsumer consumer;
 
 	@Inject
 	ElasticsearchService elasticService;
 
+	@Inject
+	TesseractProducer producer;
+
 	@Value("${storage.directory}")
 	private String storageDirectory;
+
+	private File getFile(final String resourceName) {
+		ClassLoader classLoader = getClass().getClassLoader();
+		File file = new File(classLoader.getResource(resourceName).getFile());
+		return file;
+	}
 
 	@SuppressWarnings("unchecked")
 	@Test
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
-	void testItWorks() throws Exception {
+	void testProcessImage() throws Exception {
 
 		Assertions.assertTrue(application.isRunning());
 		Assertions.assertNotNull(consumer);
 		Assertions.assertNotNull(producer);
 
 		String resourceName = "receipt.png";
-		ClassLoader classLoader = getClass().getClassLoader();
-		File file = new File(classLoader.getResource(resourceName).getFile());
+		File file = getFile(resourceName);
 
 		String id = "354b4ad9-d2ff-4596-9cf0-599c40d841f8";
 		producer.sendTesseractRequest(id, file.toString());

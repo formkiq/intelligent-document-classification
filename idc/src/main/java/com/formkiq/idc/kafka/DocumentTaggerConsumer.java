@@ -27,21 +27,24 @@ import io.micronaut.context.annotation.Value;
 import jakarta.inject.Inject;
 
 @KafkaListener(offsetReset = OffsetReset.EARLIEST)
-public class OpenNlpMessageConsumer {
+public class DocumentTaggerConsumer {
 
 	private static final double ENTITY_MIN_SCORE = 0.90;
-	
+
 	@Value("${storage.directory}")
 	private String storageDirectory;
-	
+
+	@Value("${api.ml.url}")
+	private String apiMlUrl;
+
 	@Inject
 	private ElasticsearchService elasticService;
 
 	@SuppressWarnings("unchecked")
-	@Topic("opennlp")
+	@Topic("document_tagging")
 	public void receive(String key) throws IOException, URISyntaxException, InterruptedException {
 
-		HttpRequest request = HttpRequest.newBuilder().uri(new URI("http://localhost:8080?documentId=" + key))
+		HttpRequest request = HttpRequest.newBuilder().uri(new URI(apiMlUrl + "?documentId=" + key))
 				.timeout(Duration.ofMinutes(2)).GET().build();
 
 		HttpClient client = HttpClient.newHttpClient();
@@ -70,7 +73,10 @@ public class OpenNlpMessageConsumer {
 		}
 
 		if (!tags.isEmpty()) {
+			System.out.println("key: " + key + " adding tags: " + tags);
 			elasticService.updateDocument(INDEX, key, Map.of("tags", tags));
+		} else {
+			System.out.println("key: " + key + " no tags");
 		}
 	}
 }

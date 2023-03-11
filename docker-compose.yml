@@ -2,16 +2,62 @@ version: "3.7"
 
 services:
 
-  api_ml:
-    build: ./api_ml
-    container_name: api_ml
-    restart: always
-    expose:
-      - 5000
+  zookeeper:
+    image: confluentinc/cp-zookeeper:6.2.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "5000:5000"
+      - 22181:2181
+
+  kafka:
+    image: confluentinc/cp-kafka:6.2.0
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  apiml:
+    build: ./api_ml
+    ports:
+      - 5000:5000
     volumes:
       - documents:/app/documents
 
+  api:
+    build: ./idc
+    depends_on:
+      - elasticsearch
+      - apiml
+      - kafka
+    environment:
+      - storage.directory=/app/documents
+      - elasticsearch.url=http://elasticsearch:9200
+      - api.ml.url=http://apiml:5000
+      - kafka.bootstrap.servers=http://kafka:29092
+    ports:
+      - 8080:8080
+    volumes:
+      - documents:/app/documents
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.6
+    ports:
+      - 9200:9200
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+      - cluster.name=es-docker-cluster
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
 volumes:
   documents:
+  elasticsearch-data:

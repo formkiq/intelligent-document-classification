@@ -1,12 +1,26 @@
+FROM gradle:8-jdk11-alpine as build
+
+WORKDIR /workspace/app
+
+COPY gradlew .
+COPY gradle gradle
+COPY gradle.properties gradle.properties
+COPY build.gradle .
+COPY src src
+COPY settings.gradle settings.gradle
+COPY micronaut-cli.yml micronaut-cli.yml
+
+RUN ./gradlew build -x test
+
+
 FROM openjdk:17-alpine
 
-RUN apk update
 RUN apk add --no-cache tesseract-ocr
 
 WORKDIR /home/app
-COPY layers/libs /home/app/libs
-COPY layers/classes /home/app/classes
-COPY layers/resources /home/app/resources
-COPY layers/application.jar /home/app/application.jar
+COPY --from=build /workspace/app/build/docker/main/layers/libs /home/app/libs
+COPY --from=build /workspace/app/build/docker/main/layers/classes /home/app/classes
+COPY --from=build /workspace/app/build/docker/main/layers/resources /home/app/resources
+COPY --from=build /workspace/app/build/docker/main/layers/application.jar /home/app/application.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/home/app/application.jar"]

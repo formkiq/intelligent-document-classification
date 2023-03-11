@@ -34,7 +34,7 @@ abstract class AbstractTest implements TestPropertyProvider {
 		ELASTIC.withExposedPorts(9200);
 		ELASTIC.start();
 
-		MOCK_SERVER = startClientAndServer(8080);
+		MOCK_SERVER = startClientAndServer(9000);
 		MOCK_SERVER.when(request().withMethod("GET")).respond(new ExpectationResponseCallback() {
 
 			@Override
@@ -56,7 +56,7 @@ abstract class AbstractTest implements TestPropertyProvider {
 	@Override
 	public Map<String, String> getProperties() {
 		return Map.of("kafka.bootstrap.servers", MY_KAFKA.getBootstrapServers(), "storage.directory",
-				System.getProperty("java.io.tmpdir"), "api.ml.url", "http://localhost:8080", "elasticsearch.url",
+				System.getProperty("java.io.tmpdir"), "api.ml.url", "http://localhost:9000", "elasticsearch.url",
 				"http://localhost:" + ELASTIC.getFirstMappedPort());
 	}
 

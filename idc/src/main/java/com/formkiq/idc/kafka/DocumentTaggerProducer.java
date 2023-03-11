@@ -4,8 +4,8 @@ import io.micronaut.configuration.kafka.annotation.KafkaClient;
 import io.micronaut.configuration.kafka.annotation.Topic;
 
 @KafkaClient
-public interface OpenNlpProducer {
+public interface DocumentTaggerProducer {
 
-	@Topic("opennlp")
-	void sendOpenNlpRequest(String key);
+	@Topic("document_tagging")
+	void createDocumentTagsRequest(String key);
 }

@@ -6,9 +6,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 
 import org.elasticsearch.core.Map;
 
@@ -30,7 +28,7 @@ public class TesseractMessageConsumer {
 	private String storageDirectory;
 
 	@Inject
-	OpenNlpProducer producer;
+	DocumentTaggerProducer producer;
 
 	@Inject
 	ElasticsearchService elasticService;
@@ -38,18 +36,19 @@ public class TesseractMessageConsumer {
 	@Topic("tesseract")
 	public void receive(@KafkaKey String key, final String path) throws IOException {
 
-		String filename = Path.of(path).getFileName().toString();
+//		String filename = Path.of(path).getFileName().toString();
+		System.out.println("processing ocr: " + path + " (" + key + ")");
 
 		try {
 
-			Path newFilePath = Path.of(storageDirectory, key, filename);
-			Files.createDirectories(Path.of(storageDirectory, key));
-			Files.copy(Path.of(path), newFilePath, StandardCopyOption.REPLACE_EXISTING);
+//			Path newFilePath = Path.of(storageDirectory, key, filename);
+//			Files.createDirectories(Path.of(storageDirectory, key));
+//			Files.copy(Path.of(path), newFilePath, StandardCopyOption.REPLACE_EXISTING);
 
 			Path ocrFile = Path.of(storageDirectory, key, "ocr.txt");
 
 			Tesseract tesseract = new Tesseract();
-			tesseract.setDatapath("/usr/local/share/tessdata");
+			tesseract.setDatapath("/usr/share/tessdata");
 			tesseract.setLanguage("eng");
 			tesseract.setPageSegMode(1);
 			tesseract.setOcrEngineMode(1);
@@ -61,7 +60,7 @@ public class TesseractMessageConsumer {
 				writer.write(result);
 			}
 
-			producer.sendOpenNlpRequest(key);
+			producer.createDocumentTagsRequest(key);
 
 		} catch (TesseractException e) {
 			e.printStackTrace();
