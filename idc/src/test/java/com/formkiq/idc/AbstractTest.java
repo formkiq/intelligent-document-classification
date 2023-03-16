@@ -26,12 +26,13 @@ abstract class AbstractTest implements TestPropertyProvider {
 	static final ElasticsearchContainer ELASTIC;
 
 	static {
-		MY_KAFKA = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:latest"));
+		MY_KAFKA = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.3.2"));
 		MY_KAFKA.withExposedPorts(9092, 9093);
 		MY_KAFKA.start();
 
-		ELASTIC = new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.17.7");
+		ELASTIC = new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.6.2");
 		ELASTIC.withExposedPorts(9200);
+		ELASTIC.getEnvMap().put("xpack.security.enabled", "false");
 		ELASTIC.start();
 
 		MOCK_SERVER = startClientAndServer(9000);
@@ -57,7 +58,7 @@ abstract class AbstractTest implements TestPropertyProvider {
 	public Map<String, String> getProperties() {
 		return Map.of("kafka.bootstrap.servers", MY_KAFKA.getBootstrapServers(), "storage.directory",
 				System.getProperty("java.io.tmpdir"), "api.ml.url", "http://localhost:9000", "elasticsearch.url",
-				"http://localhost:" + ELASTIC.getFirstMappedPort());
+				"http://localhost:" + ELASTIC.getMappedPort(9200));
 	}
 
 	@AfterAll

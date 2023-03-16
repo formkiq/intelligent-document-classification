@@ -14,7 +14,9 @@ repositories {
 }
 
 dependencies {
+
     annotationProcessor("io.micronaut:micronaut-http-validation")
+    
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-jackson-databind")
     implementation("io.micronaut.crac:micronaut-crac")
@@ -28,10 +30,8 @@ dependencies {
 	implementation("org.slf4j:slf4j-simple:2.0.6")
 	implementation("org.apache.opennlp:opennlp-tools:2.1.1")
     implementation("com.google.code.gson:gson:2.10")
-
-	implementation 'org.elasticsearch.client:elasticsearch-rest-client:7.17.9'
-    implementation 'org.elasticsearch.client:elasticsearch-rest-high-level-client:7.17.9'
     
+    implementation 'co.elastic.clients:elasticsearch-java:8.6.2'
     
     testImplementation("org.testcontainers:kafka:1.17.6")
 	testImplementation("org.testcontainers:elasticsearch:1.17.6")
@@ -44,8 +44,10 @@ application {
     mainClass.set("com.formkiq.idc.Application")
 }
 java {
-    sourceCompatibility = JavaVersion.toVersion("11")
-    targetCompatibility = JavaVersion.toVersion("11")
+    
+    toolchain {
+       languageVersion.set(JavaLanguageVersion.of(17))
+    }
 }
 
 graalvmNative.toolchainDetection = false

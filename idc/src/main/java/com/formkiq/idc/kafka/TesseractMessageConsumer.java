@@ -7,8 +7,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-
-import org.elasticsearch.core.Map;
+import java.util.Map;
 
 import com.formkiq.idc.elasticsearch.ElasticsearchService;
 
@@ -48,7 +47,13 @@ public class TesseractMessageConsumer {
 			Path ocrFile = Path.of(storageDirectory, key, "ocr.txt");
 
 			Tesseract tesseract = new Tesseract();
-			tesseract.setDatapath("/usr/share/tessdata");
+
+			if (Path.of("/usr/local/share/tessdata").toFile().exists()) {
+				tesseract.setDatapath("/usr/local/share/tessdata");
+			} else {
+				tesseract.setDatapath("/usr/share/tessdata");
+			}
+
 			tesseract.setLanguage("eng");
 			tesseract.setPageSegMode(1);
 			tesseract.setOcrEngineMode(1);

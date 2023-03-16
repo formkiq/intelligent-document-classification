@@ -5,11 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -64,12 +63,17 @@ class IntegrationTest extends AbstractTest {
 		String resourceName = "receipt.png";
 		File file = getFile(resourceName);
 
-		String id = "354b4ad9-d2ff-4596-9cf0-599c40d841f8";
-		producer.sendTesseractRequest(id, file.toString());
+		String documentId = "354b4ad9-d2ff-4596-9cf0-599c40d841f8";
 
-		Map<String, Object> data = elasticService.getDocument(INDEX, id);
+		Path newFilePath = Path.of(storageDirectory, documentId, resourceName);
+		Files.createDirectories(Path.of(storageDirectory, documentId));
+		Files.copy(Path.of(file.toString()), newFilePath, StandardCopyOption.REPLACE_EXISTING);
+
+		producer.sendTesseractRequest(documentId, file.toString());
+
+		Map<String, Object> data = elasticService.getDocument(INDEX, documentId);
 		while (data == null || !data.containsKey("content") || !data.containsKey("tags")) {
-			data = elasticService.getDocument(INDEX, id);
+			data = elasticService.getDocument(INDEX, documentId);
 			TimeUnit.SECONDS.sleep(1);
 		}
 
@@ -80,8 +84,20 @@ class IntegrationTest extends AbstractTest {
 		assertEquals(3, tags.size());
 		assertEquals("[invoice]", tags.get("category").toString());
 		assertEquals("[East Repair Inc, East Repatr Inc]", tags.get("ORG").toString());
+		
+		List<Map<String, Object>> list = elasticService.search(INDEX, "Repair Inc");
+		assertEquals(1, list.size());
 
-		Path path = Path.of(storageDirectory, id, resourceName);
+		list = elasticService.searchTags(INDEX, Map.of("category", "invoice"));
+		assertEquals(1, list.size());
+		
+		list = elasticService.searchTags(INDEX, Map.of("LOC", "New York"));
+		assertEquals(1, list.size());
+		
+		list = elasticService.searchTags(INDEX, Map.of("LOC", "Chicago"));
+		assertEquals(0, list.size());
+
+		Path path = Path.of(storageDirectory, documentId, resourceName);
 		assertTrue(path.toFile().exists());
 	}
 }
