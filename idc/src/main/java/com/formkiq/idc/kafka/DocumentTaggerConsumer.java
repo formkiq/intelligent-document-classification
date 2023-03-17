@@ -58,11 +58,11 @@ public class DocumentTaggerConsumer {
 
 		Map<String, Collection<String>> tags = new HashMap<>();
 
-		if (map.containsKey("category")) {
+		if (map != null && map.containsKey("category")) {
 			tags.put("category", Set.of(map.get("category").toString()));
 		}
 
-		if (map.containsKey("namedEntity")) {
+		if (map != null && map.containsKey("namedEntity")) {
 			List<Map<String, String>> entities = (List<Map<String, String>>) map.get("namedEntity");
 
 			Map<String, Set<String>> list = entities.stream().filter(e -> {

@@ -54,6 +54,7 @@ class IntegrationTest extends AbstractTest {
 	private File getFile(final String resourceName) {
 		ClassLoader classLoader = getClass().getClassLoader();
 		File file = new File(classLoader.getResource(resourceName).getFile());
+		assertTrue(file.exists());
 		return file;
 	}
 
@@ -100,6 +101,33 @@ class IntegrationTest extends AbstractTest {
 
 		list = elasticService.search(INDEX, null, Map.of("LOC", "Chicago"));
 		assertEquals(0, list.size());
+
+		Path path = Path.of(storageDirectory, documentId, resourceName);
+		assertTrue(path.toFile().exists());
+	}
+
+	@Test
+	@Timeout(unit = TimeUnit.MINUTES, value = 1)
+	void testProcessPdf() throws Exception {
+
+		String resourceName = "example.pdf";
+		File file = getFile(resourceName);
+
+		String documentId = "c7a2e2aa-c5a1-449c-8f83-d6139bdaf4fe";
+
+		Path newFilePath = Path.of(storageDirectory, documentId, resourceName);
+		Files.createDirectories(Path.of(storageDirectory, documentId));
+		Files.copy(Path.of(file.toString()), newFilePath, StandardCopyOption.REPLACE_EXISTING);
+
+		producer.sendTesseractRequest(documentId, file.toString());
+
+		Document data = elasticService.getDocument(INDEX, documentId);
+		while (data == null || data.getContent() == null || data.getTags() == null) {
+			data = elasticService.getDocument(INDEX, documentId);
+			TimeUnit.SECONDS.sleep(1);
+		}
+
+		assertTrue(data.getContent().toString().contains("Output Designer"));
 
 		Path path = Path.of(storageDirectory, documentId, resourceName);
 		assertTrue(path.toFile().exists());

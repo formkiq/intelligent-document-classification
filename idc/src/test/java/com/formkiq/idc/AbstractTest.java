@@ -4,6 +4,7 @@ import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 
 import java.io.File;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -43,11 +44,16 @@ abstract class AbstractTest implements TestPropertyProvider {
 				String documentId = httpRequest.getFirstQueryStringParameter("documentId");
 				String resourceName = "response/" + documentId + ".txt";
 				ClassLoader classLoader = getClass().getClassLoader();
-				File file = new File(classLoader.getResource(resourceName).getFile());
+				URL url = classLoader.getResource(resourceName);
 
-				Path filePath = Path.of(file.toString());
+				String content = "";
+				if (url != null) {
+					File file = new File(url.getFile());
 
-				String content = Files.readString(filePath);
+					Path filePath = Path.of(file.toString());
+
+					content = Files.readString(filePath);
+				}
 
 				return org.mockserver.model.HttpResponse.response(content);
 			}
