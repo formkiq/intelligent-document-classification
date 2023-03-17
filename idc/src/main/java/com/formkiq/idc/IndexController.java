@@ -3,13 +3,17 @@ package com.formkiq.idc;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 
+import com.formkiq.idc.elasticsearch.Document;
+import com.formkiq.idc.elasticsearch.ElasticsearchService;
 import com.formkiq.idc.kafka.TesseractProducer;
 
 import io.micronaut.context.annotation.Value;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
+import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Consumes;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Post;
@@ -25,6 +29,9 @@ public class IndexController {
 
 	@Inject
 	private TesseractProducer producer;
+
+	@Inject
+	private ElasticsearchService elasticService;
 
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Post("/upload")
@@ -45,4 +52,22 @@ public class IndexController {
 		producer.sendTesseractRequest(documentId, filePath.toString());
 		return HttpResponse.created("uploaded");
 	}
+
+	@Post(value = "/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+	public HttpResponse<SearchResponse> search(@Body SearchRequest request) {
+
+		if (request.getText() == null && request.getTags().isEmpty()) {
+			return HttpResponse.badRequest();
+		}
+
+		try {
+			List<Document> documents = elasticService.search("documents", request.getText(), request.getTags());
+			SearchResponse response = new SearchResponse();
+			response.setDocuments(documents);
+			return HttpResponse.ok(new SearchResponse());
+		} catch (IOException e) {
+			return HttpResponse.badRequest();
+		}
+	}
+
 }

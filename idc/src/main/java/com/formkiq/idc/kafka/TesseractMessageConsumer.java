@@ -7,8 +7,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Map;
 
+import com.formkiq.idc.elasticsearch.Document;
 import com.formkiq.idc.elasticsearch.ElasticsearchService;
 
 import io.micronaut.configuration.kafka.annotation.KafkaKey;
@@ -35,14 +35,9 @@ public class TesseractMessageConsumer {
 	@Topic("tesseract")
 	public void receive(@KafkaKey String key, final String path) throws IOException {
 
-//		String filename = Path.of(path).getFileName().toString();
 		System.out.println("processing ocr: " + path + " (" + key + ")");
 
 		try {
-
-//			Path newFilePath = Path.of(storageDirectory, key, filename);
-//			Files.createDirectories(Path.of(storageDirectory, key));
-//			Files.copy(Path.of(path), newFilePath, StandardCopyOption.REPLACE_EXISTING);
 
 			Path ocrFile = Path.of(storageDirectory, key, "ocr.txt");
 
@@ -59,7 +54,9 @@ public class TesseractMessageConsumer {
 			tesseract.setOcrEngineMode(1);
 
 			String result = tesseract.doOCR(new File(path));
-			elasticService.addDocument(INDEX, key, Map.of("content", result));
+			Document document = new Document();
+			document.setContent(result);
+			elasticService.addDocument(INDEX, key, document);
 
 			try (BufferedWriter writer = new BufferedWriter(new FileWriter(ocrFile.toFile()))) {
 				writer.write(result);

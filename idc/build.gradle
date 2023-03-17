@@ -37,6 +37,7 @@ dependencies {
 	testImplementation("org.testcontainers:elasticsearch:1.17.6")
     
     testImplementation("org.mock-server:mockserver-netty:5.14.0")
+    testImplementation("io.micronaut.test:micronaut-test-rest-assured")
 }
 
 

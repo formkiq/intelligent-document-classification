@@ -10,12 +10,14 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.formkiq.idc.elasticsearch.Document;
 import com.formkiq.idc.elasticsearch.ElasticsearchService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -54,7 +56,7 @@ public class DocumentTaggerConsumer {
 
 		Map<String, Object> map = gson.fromJson(response.body(), Map.class);
 
-		Map<String, Set<String>> tags = new HashMap<>();
+		Map<String, Collection<String>> tags = new HashMap<>();
 
 		if (map.containsKey("category")) {
 			tags.put("category", Set.of(map.get("category").toString()));
@@ -74,7 +76,9 @@ public class DocumentTaggerConsumer {
 
 		if (!tags.isEmpty()) {
 			System.out.println("key: " + key + " adding tags: " + tags);
-			elasticService.updateDocument(INDEX, key, Map.of("tags", tags));
+			Document document = new Document();
+			document.setTags(tags);
+			elasticService.updateDocument(INDEX, key, document);
 		} else {
 			System.out.println("key: " + key + " no tags");
 		}

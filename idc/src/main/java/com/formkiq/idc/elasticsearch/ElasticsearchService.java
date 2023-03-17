@@ -3,6 +3,8 @@ package com.formkiq.idc.elasticsearch;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -17,8 +19,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
-import co.elastic.clients.elasticsearch.core.IndexResponse;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.UpdateRequest;
 import co.elastic.clients.elasticsearch.core.UpdateResponse;
@@ -42,24 +42,20 @@ public class ElasticsearchService {
 	public ElasticsearchService() {
 	}
 
-	public boolean addDocument(String index, String id, Map<String, Object> document) throws IOException {
-		try {
+	public boolean addDocument(String index, String id, Document document) throws IOException {
 
-			IndexRequest<Map<?, ?>> request = IndexRequest.of(i -> i.index(index).id(id).document(document));
-
-			return getClient().index(request).result() == Result.Created;
-
-		} catch (ElasticsearchException e) {
-			if (e.getMessage().contains("index_not_found_exception")) {
-				return addDocument(index, id, document);
-			} else {
-				throw e;
-			}
+		Map<String, Object> map = new HashMap<>();
+		if (document.getContent() != null) {
+			map.put("content", document.getContent());
 		}
-	}
 
-	public IndexResponse createIndex(String indexName) throws IOException {
-		return getClient().index(IndexRequest.of(i -> i.index(indexName)));
+		if (document.getTags() != null) {
+			map.put("tags", document.getTags());
+		}
+
+		IndexRequest<Map<?, ?>> request = IndexRequest.of(i -> i.index(index).id(id).document(map));
+
+		return getClient().index(request).result() == Result.Created;
 	}
 
 	private ElasticsearchClient getClient() throws IOException {
@@ -77,69 +73,119 @@ public class ElasticsearchService {
 		return this.esClient;
 	}
 
-	@SuppressWarnings("unchecked")
-	public Map<String, Object> getDocument(String indexName, String documentId) throws IOException {
+	public Document getDocument(String indexName, String documentId) throws IOException {
 
 		try {
 
 			GetRequest request = GetRequest.of(i -> i.index(indexName).id(documentId));
-			return getClient().get(request, Map.class).source();
+			return getClient().get(request, Document.class).source();
 
 		} catch (ElasticsearchException e) {
 			return null;
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public List<Map<String, Object>> search(String index, String searchText) throws IOException {
+//	public List<Document> search(String index, String searchText) throws IOException {
+//
+//		List<Document> list = Collections.emptyList();
+//
+//		SearchRequest searchRequest = SearchRequest
+//				.of(i -> i.index(index).query(q -> q.match(mq -> mq.field("content").query(searchText))));
+//
+//		try {
+//			SearchResponse<Document> searchResponse = getClient().search(searchRequest, Document.class);
+//
+//			List<Hit<Document>> hits = searchResponse.hits().hits();
+//			list = hits.stream().map(m -> m.source()).collect(Collectors.toList());
+//		} catch (ElasticsearchException e) {
+//			if (!e.getMessage().contains("index_not_found_exception")) {
+//				throw e;
+//			}
+//		}
+//
+//		return list;
+//	}
 
-		SearchRequest searchRequest = SearchRequest
-				.of(i -> i.index(index).query(q -> q.match(mq -> mq.field("content").query(searchText))));
+	public List<Document> search(String index, String searchText, Map<String, String> tags) throws IOException {
 
-		SearchResponse<Map> searchResponse = getClient().search(searchRequest, Map.class);
+		try {
+			SearchResponse<Document> searchResponse = getClient().search(s -> {
+				return s.index(index).query(q -> {
 
-		List<Hit<Map>> hits = searchResponse.hits().hits();
-		List<Map<String, Object>> list = hits.stream().map(m -> (Map<String, Object>) m.source())
-				.collect(Collectors.toList());
+					BoolQuery bq = BoolQuery.of(qq -> {
 
-		return list;
-	}
+						List<Query> queries = new ArrayList<>();
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public List<Map<String, Object>> searchTags(String index, Map<String, String> keyValueMap) throws IOException {
+						if (searchText != null && searchText.trim().length() > 0) {
+							Query textQuery = Query.of(tq -> tq.match(mq -> mq.field("content").query(searchText)));
+							queries.add(textQuery);
+						}
 
-		SearchResponse<Map> searchResponse = getClient().search(s -> {
-			return s.index(index).query(q -> {
+						if (tags != null) {
+							for (Map.Entry<String, String> entry : tags.entrySet()) {
+								String key = entry.getKey();
+								String value = entry.getValue();
 
-				BoolQuery bq = BoolQuery.of(qq -> {
+								if (value != null && value.trim().length() > 0) {
+									Query tagQuery = Query
+											.of(tq -> tq.match(mq -> mq.field("tags." + key).query(value)));
+									queries.add(tagQuery);
+								}
+							}
+						}
 
-					List<Query> tagQueries = new ArrayList<>();
+						return qq.must(queries);
+					});
 
-					for (Map.Entry<String, String> entry : keyValueMap.entrySet()) {
-						String key = entry.getKey();
-						String value = entry.getValue();
-
-						Query tagQuery = Query.of(tq -> tq.match(mq -> mq.field("tags." + key).query(value)));
-						tagQueries.add(tagQuery);
-					}
-
-					return qq.must(tagQueries);
+					return q.bool(bq);
 				});
+			}, Document.class);
 
-				return q.bool(bq);
-			});
-		}, Map.class);
+			List<Hit<Document>> hits = searchResponse.hits().hits();
+			List<Document> list = hits.stream().map(m -> m.source()).collect(Collectors.toList());
 
-		List<Hit<Map>> hits = searchResponse.hits().hits();
-		List<Map<String, Object>> list = hits.stream().map(m -> (Map<String, Object>) m.source())
-				.collect(Collectors.toList());
-
-		return list;
+			return list;
+		} catch (ElasticsearchException e) {
+			if (e.getMessage().contains("index_not_found_exception")) {
+				return Collections.emptyList();
+			} else {
+				throw e;
+			}
+		}
 	}
+
+//	public List<Document> searchTags(String index, Map<String, String> keyValueMap) throws IOException {
+//
+//		SearchResponse<Document> searchResponse = getClient().search(s -> {
+//			return s.index(index).query(q -> {
+//
+//				BoolQuery bq = BoolQuery.of(qq -> {
+//
+//					List<Query> tagQueries = new ArrayList<>();
+//
+//					for (Map.Entry<String, String> entry : keyValueMap.entrySet()) {
+//						String key = entry.getKey();
+//						String value = entry.getValue();
+//
+//						Query tagQuery = Query.of(tq -> tq.match(mq -> mq.field("tags." + key).query(value)));
+//						tagQueries.add(tagQuery);
+//					}
+//
+//					return qq.must(tagQueries);
+//				});
+//
+//				return q.bool(bq);
+//			});
+//		}, Document.class);
+//
+//		List<Hit<Document>> hits = searchResponse.hits().hits();
+//		List<Document> list = hits.stream().map(m -> m.source()).collect(Collectors.toList());
+//
+//		return list;
+//	}
 
 	@SuppressWarnings("rawtypes")
-	public UpdateResponse<Map> updateDocument(String index, String id, Map<String, Object> document)
-			throws IOException {
+	public UpdateResponse<Map> updateDocument(String index, String id, Document document) throws IOException {
 		return getClient().update(UpdateRequest.of(i -> i.index(index).id(id).doc(document)), Map.class);
 	}
 
