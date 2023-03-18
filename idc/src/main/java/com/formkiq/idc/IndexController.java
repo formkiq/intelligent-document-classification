@@ -16,6 +16,7 @@ import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Consumes;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Options;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.multipart.CompletedFileUpload;
@@ -24,15 +25,42 @@ import jakarta.inject.Inject;
 @Controller
 public class IndexController {
 
-	@Value("${storage.directory}")
-	private String storageDirectory;
+	@Inject
+	private ElasticsearchService elasticService;
 
 	@Inject
 	private TesseractProducer producer;
 
-	@Inject
-	private ElasticsearchService elasticService;
+	@Value("${storage.directory}")
+	private String storageDirectory;
 
+	@Options(value = "/search", consumes = MediaType.APPLICATION_JSON)
+	public HttpResponse<SearchResponse> search() {
+		return HttpResponse.ok();
+	}
+
+	@Post(value = "/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+	public HttpResponse<SearchResponse> search(@Body SearchRequest request) {
+
+		if (request.getText() == null && request.getTags().isEmpty()) {
+			return HttpResponse.badRequest();
+		}
+
+		try {
+			List<Document> documents = elasticService.search("documents", request.getText(), request.getTags());
+			SearchResponse response = new SearchResponse();
+			response.setDocuments(documents);
+			return HttpResponse.ok(new SearchResponse());
+		} catch (IOException e) {
+			return HttpResponse.badRequest();
+		}
+	}
+	
+	@Options(value = "/upload", consumes = MediaType.APPLICATION_JSON)
+	public HttpResponse<SearchResponse> upload() {
+		return HttpResponse.ok();
+	}
+	
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Post("/upload")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -52,22 +80,4 @@ public class IndexController {
 		producer.sendTesseractRequest(documentId, filePath.toString());
 		return HttpResponse.created("uploaded");
 	}
-
-	@Post(value = "/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	public HttpResponse<SearchResponse> search(@Body SearchRequest request) {
-
-		if (request.getText() == null && request.getTags().isEmpty()) {
-			return HttpResponse.badRequest();
-		}
-
-		try {
-			List<Document> documents = elasticService.search("documents", request.getText(), request.getTags());
-			SearchResponse response = new SearchResponse();
-			response.setDocuments(documents);
-			return HttpResponse.ok(new SearchResponse());
-		} catch (IOException e) {
-			return HttpResponse.badRequest();
-		}
-	}
-
 }
