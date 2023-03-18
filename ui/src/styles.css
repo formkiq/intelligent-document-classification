@@ -1,0 +1,64 @@
+.dropzone {
+  border: 2px dashed #ccc;
+  border-radius: 5px;
+  padding: 50px;
+  text-align: center;
+  font-size: 1.2em;
+}
+
+.dropzone:hover {
+  background-color: #f9f9f9;
+}
+
+.dropzone p {
+  margin: 0;
+  padding: 0;
+}
+
+.dropzone .file-input {
+  display: none;
+}
+
+.search-table-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-table-container form {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.search-table-container input[type='text'] {
+  padding: 10px;
+  font-size: 1.2em;
+  border-radius: 5px;
+  margin-right: 10px;
+}
+
+.search-table-container button[type='submit'] {
+  padding: 10px 20px;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.2em;
+}
+
+.search-results-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.search-results-table th,
+.search-results-table td {
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+.search-results-table th {
+  background-color: #4285f4;
+  color: white;
+}
