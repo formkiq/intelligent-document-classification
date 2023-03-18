@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.formkiq.idc.elasticsearch.Document;
@@ -34,9 +35,15 @@ public class IndexController {
 	@Value("${storage.directory}")
 	private String storageDirectory;
 
+	private HttpResponse<Object> options() {
+		return HttpResponse.ok()
+				.headers(Map.of("Access-Control-Allow-Credentials", "true", "Access-Control-Allow-Methods", "*",
+						"Access-Control-Allow-Origin", "*", "Access-Control-Allow-Headers", "*"));
+	}
+
 	@Options(value = "/search", consumes = MediaType.APPLICATION_JSON)
-	public HttpResponse<SearchResponse> search() {
-		return HttpResponse.ok();
+	public HttpResponse<Object> search() {
+		return options();
 	}
 
 	@Post(value = "/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
@@ -50,17 +57,17 @@ public class IndexController {
 			List<Document> documents = elasticService.search("documents", request.getText(), request.getTags());
 			SearchResponse response = new SearchResponse();
 			response.setDocuments(documents);
-			return HttpResponse.ok(new SearchResponse());
+			return HttpResponse.ok(response);
 		} catch (IOException e) {
 			return HttpResponse.badRequest();
 		}
 	}
-	
+
 	@Options(value = "/upload", consumes = MediaType.APPLICATION_JSON)
-	public HttpResponse<SearchResponse> upload() {
-		return HttpResponse.ok();
+	public HttpResponse<Object> upload() {
+		return options();
 	}
-	
+
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Post("/upload")
 	@Produces(MediaType.TEXT_PLAIN)

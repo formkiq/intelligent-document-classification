@@ -10,6 +10,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,7 @@ import com.formkiq.idc.elasticsearch.Document;
 import com.formkiq.idc.elasticsearch.ElasticsearchService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 
 import io.micronaut.configuration.kafka.annotation.KafkaListener;
 import io.micronaut.configuration.kafka.annotation.OffsetReset;
@@ -54,24 +56,30 @@ public class DocumentTaggerConsumer {
 
 		Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
-		Map<String, Object> map = gson.fromJson(response.body(), Map.class);
-
 		Map<String, Collection<String>> tags = new HashMap<>();
 
-		if (map != null && map.containsKey("category")) {
-			tags.put("category", Set.of(map.get("category").toString()));
-		}
+		try {
+			Map<String, Object> map = gson.fromJson(response.body(), Map.class);
 
-		if (map != null && map.containsKey("namedEntity")) {
-			List<Map<String, String>> entities = (List<Map<String, String>>) map.get("namedEntity");
+			if (map != null && map.containsKey("category")) {
+				tags.put("category", Set.of(map.get("category").toString()));
+			}
 
-			Map<String, Set<String>> list = entities.stream().filter(e -> {
-				float score = Float.valueOf(e.get("score")).floatValue();
-				return score >= ENTITY_MIN_SCORE;
-			}).map(e -> Map.of(e.get("entity_group"), e.get("word"))).flatMap(e -> e.entrySet().stream())
-					.collect(Collectors.groupingBy(Map.Entry::getKey,
-							Collectors.mapping(Map.Entry::getValue, Collectors.toSet())));
-			tags.putAll(list);
+			if (map != null && map.containsKey("namedEntity")) {
+				List<Map<String, String>> entities = (List<Map<String, String>>) map.get("namedEntity");
+
+				Map<String, Set<String>> list = entities.stream().filter(e -> {
+					float score = Float.valueOf(e.get("score")).floatValue();
+					return score >= ENTITY_MIN_SCORE;
+				}).map(e -> Map.of(e.get("entity_group"), e.get("word"))).flatMap(e -> e.entrySet().stream())
+						.collect(Collectors.groupingBy(Map.Entry::getKey,
+								Collectors.mapping(Map.Entry::getValue, Collectors.toSet())));
+				tags.putAll(list);
+			}
+
+		} catch (JsonSyntaxException e) {
+			System.out.println("invalid body: " + response.body());
+			tags.put("category", Arrays.asList("unknown"));
 		}
 
 		if (!tags.isEmpty()) {
@@ -79,8 +87,6 @@ public class DocumentTaggerConsumer {
 			Document document = new Document();
 			document.setTags(tags);
 			elasticService.updateDocument(INDEX, key, document);
-		} else {
-			System.out.println("key: " + key + " no tags");
 		}
 	}
 }
