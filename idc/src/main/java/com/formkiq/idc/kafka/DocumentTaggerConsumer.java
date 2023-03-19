@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import com.formkiq.idc.elasticsearch.Document;
 import com.formkiq.idc.elasticsearch.ElasticsearchService;
+import com.formkiq.idc.elasticsearch.Status;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
@@ -55,6 +56,7 @@ public class DocumentTaggerConsumer {
 		HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
 
 		Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+		Document document = new Document();
 
 		Map<String, Collection<String>> tags = new HashMap<>();
 
@@ -77,16 +79,19 @@ public class DocumentTaggerConsumer {
 				tags.putAll(list);
 			}
 
+			document.setStatus(Status.COMPLETE.name());
+
 		} catch (JsonSyntaxException e) {
 			System.out.println("invalid body: " + response.body());
 			tags.put("category", Arrays.asList("unknown"));
+			document.setStatus(Status.ML_FAILED.name());
 		}
 
 		if (!tags.isEmpty()) {
 			System.out.println("key: " + key + " adding tags: " + tags);
-			Document document = new Document();
 			document.setTags(tags);
-			elasticService.updateDocument(INDEX, key, document);
 		}
+
+		elasticService.updateDocument(INDEX, key, document);
 	}
 }

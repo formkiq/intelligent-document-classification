@@ -10,6 +10,7 @@ import java.nio.file.Path;
 
 import com.formkiq.idc.elasticsearch.Document;
 import com.formkiq.idc.elasticsearch.ElasticsearchService;
+import com.formkiq.idc.elasticsearch.Status;
 
 import io.micronaut.configuration.kafka.annotation.KafkaKey;
 import io.micronaut.configuration.kafka.annotation.KafkaListener;
@@ -56,7 +57,8 @@ public class TesseractMessageConsumer {
 			String result = tesseract.doOCR(new File(path));
 			Document document = new Document();
 			document.setContent(result);
-			elasticService.addDocument(INDEX, key, document);
+			document.setStatus(Status.OCR_COMPLETE.name());
+			elasticService.updateDocument(INDEX, key, document);
 
 			try (BufferedWriter writer = new BufferedWriter(new FileWriter(ocrFile.toFile()))) {
 				writer.write(result);
@@ -66,6 +68,10 @@ public class TesseractMessageConsumer {
 
 		} catch (TesseractException e) {
 			e.printStackTrace();
+			
+			Document document = new Document();
+			document.setStatus(Status.OCR_FAILED.name());
+			elasticService.updateDocument(INDEX, key, document);
 		}
 	}
 }

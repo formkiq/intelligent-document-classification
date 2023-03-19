@@ -2,14 +2,17 @@ package com.formkiq.idc.elasticsearch;
 
 import java.io.IOException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.http.HttpHost;
+import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -32,9 +35,12 @@ import jakarta.inject.Singleton;
 @Singleton
 public class ElasticsearchService {
 
+	public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
+	
 	public static final String INDEX = "documents";
 
 	private ElasticsearchClient esClient;
+	private SimpleDateFormat formatter = new SimpleDateFormat(DATE_FORMAT);
 
 	@Value("${elasticsearch.url}")
 	private String url;
@@ -52,6 +58,9 @@ public class ElasticsearchService {
 		if (document.getTags() != null) {
 			map.put("tags", document.getTags());
 		}
+
+		map.put("insertedDate", formatter.format(new Date()));
+		map.put("status", Status.NEW.name());
 
 		IndexRequest<Map<?, ?>> request = IndexRequest.of(i -> i.index(index).id(id).document(map));
 
@@ -78,9 +87,16 @@ public class ElasticsearchService {
 		try {
 
 			GetRequest request = GetRequest.of(i -> i.index(indexName).id(documentId));
-			return getClient().get(request, Document.class).source();
+			Document document = getClient().get(request, Document.class).source();
 
-		} catch (ElasticsearchException e) {
+			if (document != null) {
+				document.setDocumentId(documentId);
+			}
+
+			return document;
+
+		} catch (ResponseException | ElasticsearchException e) {
+			e.printStackTrace();
 			return null;
 		}
 	}

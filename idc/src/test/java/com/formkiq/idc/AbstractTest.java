@@ -4,9 +4,11 @@ import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.AfterAll;
@@ -22,9 +24,10 @@ import io.micronaut.test.support.TestPropertyProvider;
 
 abstract class AbstractTest implements TestPropertyProvider {
 
-	static final KafkaContainer MY_KAFKA;
-	static final ClientAndServer MOCK_SERVER;
+	static final Map<String, String> CONTENT_MAP = new HashMap<>();
 	static final ElasticsearchContainer ELASTIC;
+	static final ClientAndServer MOCK_SERVER;
+	static final KafkaContainer MY_KAFKA;
 
 	static {
 		MY_KAFKA = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.3.2"));
@@ -42,22 +45,22 @@ abstract class AbstractTest implements TestPropertyProvider {
 			@Override
 			public HttpResponse handle(HttpRequest httpRequest) throws Exception {
 				String documentId = httpRequest.getFirstQueryStringParameter("documentId");
-				String resourceName = "response/" + documentId + ".txt";
-				ClassLoader classLoader = getClass().getClassLoader();
-				URL url = classLoader.getResource(resourceName);
-
-				String content = "";
-				if (url != null) {
-					File file = new File(url.getFile());
-
-					Path filePath = Path.of(file.toString());
-
-					content = Files.readString(filePath);
-				}
-
+				String content = CONTENT_MAP.getOrDefault(documentId, "");
 				return org.mockserver.model.HttpResponse.response(content);
 			}
+
 		});
+	}
+	
+	@AfterAll
+	public static void afterClass() {
+		MOCK_SERVER.stop();
+		MY_KAFKA.stop();
+		ELASTIC.stop();
+	}
+	
+	protected void addContent(String documentId, String content) {
+		CONTENT_MAP.put(documentId, content);
 	}
 
 	@Override
@@ -67,10 +70,18 @@ abstract class AbstractTest implements TestPropertyProvider {
 				"http://localhost:" + ELASTIC.getMappedPort(9200));
 	}
 
-	@AfterAll
-	public static void afterClass() {
-		MOCK_SERVER.stop();
-		MY_KAFKA.stop();
-		ELASTIC.stop();
+	protected String readResource(String resourceName) throws IOException {
+		ClassLoader classLoader = getClass().getClassLoader();
+		URL url = classLoader.getResource(resourceName);
+
+		String content = "";
+		if (url != null) {
+			File file = new File(url.getFile());
+
+			Path filePath = Path.of(file.toString());
+
+			content = Files.readString(filePath);
+		}
+		return content;
 	}
 }
