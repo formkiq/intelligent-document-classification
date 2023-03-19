@@ -48,14 +48,23 @@ def image_classification(documentId):
 
   files = find_document(documentId)
   if len(files) > 0:
-    image = Image.open(files[0]).convert('RGB')
+    try:
+      # Open the image
+      image = Image.open(files[0])
 
-    inputs = processor(images=image, return_tensors="pt")
-    outputs = imageModel(**inputs)
-    logits = outputs.logits
+      # Convert to RGB if necessary
+      if image.mode != "RGB":
+          image = image.convert("RGB")
 
-    # model predicts one of the 16 RVL-CDIP classes
-    predicted_class_idx = logits.argmax(-1).item()
-    return imageModel.config.id2label[predicted_class_idx]
+      inputs = processor(images=image, return_tensors="pt")
+      outputs = imageModel(**inputs)
+      logits = outputs.logits
+
+      # model predicts one of the 16 RVL-CDIP classes
+      predicted_class_idx = logits.argmax(-1).item()
+      return imageModel.config.id2label[predicted_class_idx]
+      
+    except Exception as e:
+      return "unknown"
   else:
     return "unknown"
