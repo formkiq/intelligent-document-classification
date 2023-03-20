@@ -108,6 +108,10 @@ public class DocumentTaggerConsumer {
 
 			if (map != null) {
 
+				if (map.containsKey("title")) {
+					document.setTitle(map.get("title").toString());
+				}
+
 				if (map.containsKey("category")) {
 					tags.put("category", Set.of(map.get("category").toString()));
 				}
