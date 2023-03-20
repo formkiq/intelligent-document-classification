@@ -9,6 +9,7 @@ public class Document {
 	private String content;
 	private String contentType;
 	private String documentId;
+	private String fileLocation;
 	private String insertedDate;
 	private String status;
 	private Map<String, Collection<String>> tags = Collections.emptyMap();
@@ -30,9 +31,14 @@ public class Document {
 		return documentId;
 	}
 
+	public String getFileLocation() {
+		return fileLocation;
+	}
+
 	public String getInsertedDate() {
 		return insertedDate;
 	}
+
 	public String getStatus() {
 		return status;
 	}
@@ -55,6 +61,10 @@ public class Document {
 
 	public void setDocumentId(String documentId) {
 		this.documentId = documentId;
+	}
+
+	public void setFileLocation(String fileLocation) {
+		this.fileLocation = fileLocation;
 	}
 
 	public void setInsertedDate(String insertedDate) {

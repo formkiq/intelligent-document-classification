@@ -2,13 +2,18 @@ package com.formkiq.idc.kafka;
 
 import static com.formkiq.idc.elasticsearch.ElasticsearchService.INDEX;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
@@ -17,6 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.ImageType;
+import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.pdfbox.tools.imageio.ImageIOUtil;
 
 import com.formkiq.idc.elasticsearch.Document;
 import com.formkiq.idc.elasticsearch.ElasticsearchService;
@@ -29,6 +39,7 @@ import io.micronaut.configuration.kafka.annotation.KafkaListener;
 import io.micronaut.configuration.kafka.annotation.OffsetReset;
 import io.micronaut.configuration.kafka.annotation.Topic;
 import io.micronaut.context.annotation.Value;
+import io.micronaut.http.MediaType;
 import jakarta.inject.Inject;
 
 @KafkaListener(offsetReset = OffsetReset.EARLIEST)
@@ -36,20 +47,51 @@ public class DocumentTaggerConsumer {
 
 	private static final double ENTITY_MIN_SCORE = 0.90;
 
-	@Value("${storage.directory}")
-	private String storageDirectory;
-
 	@Value("${api.ml.url}")
 	private String apiMlUrl;
 
 	@Inject
 	private ElasticsearchService elasticService;
 
+	@Value("${storage.directory}")
+	private String storageDirectory;
+
+	private String formatConverter(String documentId) throws IOException {
+
+		Document document = elasticService.getDocumentWithoutContent(INDEX, documentId);
+		Path path = Path.of(document.getFileLocation());
+
+		MediaType contentType = MediaType.of(document.getContentType());
+
+		if (MediaType.APPLICATION_PDF_TYPE.equals(contentType)) {
+
+			String pdfFilename = document.getFileLocation();
+			path = Path.of(storageDirectory, documentId, "image.png");
+			System.out.println("pdfFilename: " + pdfFilename);
+
+			try {
+
+				try (PDDocument pdDocument = PDDocument.load(new File(pdfFilename))) {
+					PDFRenderer pdfRenderer = new PDFRenderer(pdDocument);
+					BufferedImage bim = pdfRenderer.renderImageWithDPI(0, 300, ImageType.RGB);
+					ImageIOUtil.writeImage(bim, path.toString(), 300);
+				}
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return path.toString();
+	}
+
 	@SuppressWarnings("unchecked")
 	@Topic("document_tagging")
 	public void receive(String key) throws IOException, URISyntaxException, InterruptedException {
 
-		HttpRequest request = HttpRequest.newBuilder().uri(new URI(apiMlUrl + "?documentId=" + key))
+		String path = URLEncoder.encode(formatConverter(key), StandardCharsets.UTF_8);
+
+		HttpRequest request = HttpRequest.newBuilder().uri(new URI(apiMlUrl + "?documentId=" + key + "&path=" + path))
 				.timeout(Duration.ofMinutes(2)).GET().build();
 
 		HttpClient client = HttpClient.newHttpClient();
@@ -61,22 +103,26 @@ public class DocumentTaggerConsumer {
 		Map<String, Collection<String>> tags = new HashMap<>();
 
 		try {
+
 			Map<String, Object> map = gson.fromJson(response.body(), Map.class);
 
-			if (map != null && map.containsKey("category")) {
-				tags.put("category", Set.of(map.get("category").toString()));
-			}
+			if (map != null) {
 
-			if (map != null && map.containsKey("namedEntity")) {
-				List<Map<String, String>> entities = (List<Map<String, String>>) map.get("namedEntity");
+				if (map.containsKey("category")) {
+					tags.put("category", Set.of(map.get("category").toString()));
+				}
 
-				Map<String, Set<String>> list = entities.stream().filter(e -> {
-					float score = Float.valueOf(e.get("score")).floatValue();
-					return score >= ENTITY_MIN_SCORE;
-				}).map(e -> Map.of(e.get("entity_group"), e.get("word"))).flatMap(e -> e.entrySet().stream())
-						.collect(Collectors.groupingBy(Map.Entry::getKey,
-								Collectors.mapping(Map.Entry::getValue, Collectors.toSet())));
-				tags.putAll(list);
+				if (map.containsKey("namedEntity")) {
+					List<Map<String, String>> entities = (List<Map<String, String>>) map.get("namedEntity");
+
+					Map<String, Set<String>> list = entities.stream().filter(e -> {
+						float score = Float.valueOf(e.get("score")).floatValue();
+						return score >= ENTITY_MIN_SCORE;
+					}).map(e -> Map.of(e.get("entity_group"), e.get("word"))).flatMap(e -> e.entrySet().stream())
+							.collect(Collectors.groupingBy(Map.Entry::getKey,
+									Collectors.mapping(Map.Entry::getValue, Collectors.toSet())));
+					tags.putAll(list);
+				}
 			}
 
 			document.setStatus(Status.COMPLETE.name());

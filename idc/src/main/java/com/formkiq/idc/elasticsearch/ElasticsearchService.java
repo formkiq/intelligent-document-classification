@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -36,7 +37,7 @@ import jakarta.inject.Singleton;
 public class ElasticsearchService {
 
 	public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
-	
+
 	public static final String INDEX = "documents";
 
 	private ElasticsearchClient esClient;
@@ -61,6 +62,8 @@ public class ElasticsearchService {
 
 		map.put("insertedDate", formatter.format(new Date()));
 		map.put("status", Status.NEW.name());
+		map.put("contentType", document.getContentType());
+		map.put("fileLocation", document.getFileLocation());
 
 		IndexRequest<Map<?, ?>> request = IndexRequest.of(i -> i.index(index).id(id).document(map));
 
@@ -92,6 +95,22 @@ public class ElasticsearchService {
 			if (document != null) {
 				document.setDocumentId(documentId);
 			}
+
+			return document;
+
+		} catch (ResponseException | ElasticsearchException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public Document getDocumentWithoutContent(String indexName, String documentId) throws IOException {
+
+		try {
+
+			GetRequest request = GetRequest
+					.of(i -> i.index(indexName).id(documentId).sourceIncludes(Arrays.asList("contentType", "fileLocation")));
+			Document document = getClient().get(request, Document.class).source();
 
 			return document;
 

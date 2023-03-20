@@ -109,20 +109,27 @@ class IntegrationTest extends AbstractTest {
 	void testProcessPdf01() throws Exception {
 
 		String resourceName = "example.pdf";
-		String documentId = upload(resourceName);
+		String documentId = upload(resourceName, MediaType.APPLICATION_PDF_TYPE);
 
 		Document data = elasticService.getDocument(INDEX, documentId);
 		while (!"COMPLETE".equals(data.getStatus())) {
 			data = elasticService.getDocument(INDEX, documentId);
 			TimeUnit.SECONDS.sleep(1);
-			System.out.println("STATUS: " + data.getStatus());
 		}
 
 		assertTrue(data.getContent().toString().contains("Output Designer"));
 		assertEquals(documentId, data.getDocumentId());
 		assertNotNull(data.getInsertedDate());
+		assertNotNull(data.getFileLocation());
+		assertEquals("application/pdf", data.getContentType());
 
-		Path path = Path.of(storageDirectory, documentId, resourceName);
+		Path path = Path.of(storageDirectory, documentId, "original", resourceName);
+		assertTrue(path.toFile().exists());
+
+		path = Path.of(storageDirectory, documentId, "ocr.txt");
+		assertTrue(path.toFile().exists());
+
+		path = Path.of(storageDirectory, documentId, "image.png");
 		assertTrue(path.toFile().exists());
 	}
 
@@ -131,7 +138,7 @@ class IntegrationTest extends AbstractTest {
 	void testProcessPng01() throws Exception {
 
 		String resourceName = "receipt.png";
-		String documentId = upload(resourceName);
+		String documentId = upload(resourceName, MediaType.IMAGE_PNG_TYPE);
 		assertNotNull(documentId);
 
 		String readResource = readResource("response/354b4ad9-d2ff-4596-9cf0-599c40d841f8.txt");
@@ -146,6 +153,8 @@ class IntegrationTest extends AbstractTest {
 		assertEquals(documentId, data.getDocumentId());
 		assertNotNull(data.getInsertedDate());
 		assertEquals("COMPLETE", data.getStatus());
+		assertEquals("image/png", data.getContentType());
+		assertNotNull(data.getFileLocation());
 		assertTrue(data.getContent().toString().contains("East Repair Inc"));
 
 		Map<String, Collection<String>> tags = data.getTags();
@@ -165,14 +174,17 @@ class IntegrationTest extends AbstractTest {
 		list = elasticService.search(INDEX, null, Map.of("LOC", "Chicago"));
 		assertEquals(0, list.size());
 
-		Path path = Path.of(storageDirectory, documentId, resourceName);
+		Path path = Path.of(storageDirectory, documentId, "original", resourceName);
+		assertTrue(path.toFile().exists());
+
+		path = Path.of(storageDirectory, documentId, "ocr.txt");
 		assertTrue(path.toFile().exists());
 	}
 
-	private String upload(String resourceName) throws IOException {
+	private String upload(String resourceName, MediaType mediaType) throws IOException {
 		File file = getFile(resourceName);
 
-		FileUpload fileUpload = new MemoryFileUpload(resourceName, resourceName, MediaType.IMAGE_PNG, "base64",
+		FileUpload fileUpload = new MemoryFileUpload(resourceName, resourceName, mediaType.getName(), "base64",
 				StandardCharset.UTF_8, file.length());
 		fileUpload.setContent(file);
 		CompletedFileUpload completedFileUpload = new NettyCompletedFileUpload(fileUpload);

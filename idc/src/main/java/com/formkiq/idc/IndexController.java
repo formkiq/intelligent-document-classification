@@ -98,15 +98,15 @@ public class IndexController {
 
 		String documentId = UUID.randomUUID().toString();
 
+		Path filePath = Path.of(storageDirectory, documentId, "original", file.getFilename());
+		Files.createDirectories(Path.of(storageDirectory, documentId, "original"));
+		Files.write(filePath, file.getBytes());
+		
 		Document document = new Document();
 		document.setDocumentId(documentId);
 		document.setContentType(mediaType.getName());
-
+		document.setFileLocation(filePath.toString());
 		this.elasticService.addDocument(INDEX, documentId, document);
-
-		Path filePath = Path.of(storageDirectory, documentId, file.getFilename());
-		Files.createDirectories(Path.of(storageDirectory, documentId));
-		Files.write(filePath, file.getBytes());
 
 		producer.sendTesseractRequest(documentId, filePath.toString());
 		return HttpResponse.created(document);
