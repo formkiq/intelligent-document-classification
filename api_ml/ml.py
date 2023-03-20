@@ -1,24 +1,18 @@
-from transformers import AutoTokenizer, AutoModelForTokenClassification
+from transformers import AutoTokenizer, AutoModelForTokenClassification, AutoModelForSeq2SeqLM
 from transformers import pipeline
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 import torch
 from PIL import Image
 import os
 
+titleTokenizer = AutoTokenizer.from_pretrained("deep-learning-analytics/automatic-title-generation")
+titleModel = AutoModelForSeq2SeqLM.from_pretrained("deep-learning-analytics/automatic-title-generation")
+
 tokenizer = AutoTokenizer.from_pretrained("dslim/bert-base-NER")
 nerModel = AutoModelForTokenClassification.from_pretrained("dslim/bert-base-NER")
 
 processor = AutoImageProcessor.from_pretrained("microsoft/dit-base-finetuned-rvlcdip")
 imageModel = AutoModelForImageClassification.from_pretrained("microsoft/dit-base-finetuned-rvlcdip")
-
-def find_document(documentId):
-    files = []
-    directory = os.environ.get('STORAGE_DIRECTORY', '/app/data')
-    directory = os.path.join(directory, f"{documentId}")
-    for filename in os.listdir(directory):
-        if filename != 'ocr.txt' and os.path.isfile(os.path.join(directory, filename)):
-            files.append(filename)
-    return files
 
 def load_ocr_file(documentId):
     directory = os.environ.get('STORAGE_DIRECTORY', '/app/data')
@@ -31,12 +25,10 @@ def load_ocr_file(documentId):
     else:
         return None
 
-def named_entity_recognition(documentId):
-
-  nlp = pipeline("ner", model=nerModel, tokenizer=tokenizer, aggregation_strategy="simple")
-  ocr = load_ocr_file(documentId)
+def named_entity_recognition(ocr):
 
   if ocr is not None:
+    nlp = pipeline("ner", model=nerModel, tokenizer=tokenizer, aggregation_strategy="simple")
     ner_results = nlp(ocr)
     for x in ner_results:
       x["score"] = str(x["score"])
@@ -44,27 +36,32 @@ def named_entity_recognition(documentId):
 
   return []
 
-def image_classification(documentId):
+def image_classification(path):
 
-  files = find_document(documentId)
-  if len(files) > 0:
-    try:
-      # Open the image
-      image = Image.open(files[0])
+  try:
+    # Open the image
+    image = Image.open(path)
 
-      # Convert to RGB if necessary
-      if image.mode != "RGB":
-          image = image.convert("RGB")
+    # Convert to RGB if necessary
+    if image.mode != "RGB":
+        image = image.convert("RGB")
 
-      inputs = processor(images=image, return_tensors="pt")
-      outputs = imageModel(**inputs)
-      logits = outputs.logits
+    inputs = processor(images=image, return_tensors="pt")
+    outputs = imageModel(**inputs)
+    logits = outputs.logits
 
-      # model predicts one of the 16 RVL-CDIP classes
-      predicted_class_idx = logits.argmax(-1).item()
-      return imageModel.config.id2label[predicted_class_idx]
-      
-    except Exception as e:
-      return "unknown"
-  else:
+    # model predicts one of the 16 RVL-CDIP classes
+    predicted_class_idx = logits.argmax(-1).item()
+    return imageModel.config.id2label[predicted_class_idx]
+    
+  except Exception as e:
     return "unknown"
+
+def generate_title(text):
+  max_len = 120
+  tokenized_inputs = titleTokenizer(text, padding='max_length', truncation=True, max_length=max_len, return_attention_mask=True, return_tensors='pt')
+
+  inputs={"input_ids": tokenized_inputs['input_ids'], "attention_mask": tokenized_inputs['attention_mask']}
+  results= titleModel.generate(input_ids= inputs['input_ids'], attention_mask=inputs['attention_mask'], do_sample=True, max_length=120, top_k=120, top_p=0.98, early_stopping=True, num_return_sequences=1)
+  answer = titleTokenizer.decode(results[0], skip_special_tokens=True)
+  return answer

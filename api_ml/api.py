@@ -1,15 +1,24 @@
 from flask import Flask, jsonify, request, Request
-from ml import named_entity_recognition, image_classification
+from ml import named_entity_recognition, image_classification, generate_title, load_ocr_file
+import urllib.parse
 
 app = Flask(__name__)
 
 @app.route('/')
 def index():
     documentId = request.args.get('documentId')
-    if documentId:
-        ner_results = named_entity_recognition(documentId)
-        category = image_classification(documentId)
-        return jsonify({'namedEntity': ner_results, 'category': category})
+    path = request.args.get('path')
+
+    if documentId is not None and path is not None:
+
+        ocr = load_ocr_file(documentId)
+        ner_results = named_entity_recognition(ocr)
+        title = generate_title(ocr)
+
+        path = urllib.parse.unquote(path)
+        category = image_classification(path)
+        
+        return jsonify({'namedEntity': ner_results, 'category': category, 'title': title})
     else:
         return jsonify({'error': 'Please provide an "documentId" in the request parameter'}), 404
 
