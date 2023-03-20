@@ -71,6 +71,7 @@ public class IndexController {
 
 		try {
 			List<Document> documents = elasticService.search("documents", request.getText(), request.getTags());
+			documents.forEach(doc -> doc.setContent(null));
 			SearchResponse response = new SearchResponse();
 			response.setDocuments(documents);
 			return HttpResponse.ok(response);
@@ -101,7 +102,7 @@ public class IndexController {
 		Path filePath = Path.of(storageDirectory, documentId, "original", file.getFilename());
 		Files.createDirectories(Path.of(storageDirectory, documentId, "original"));
 		Files.write(filePath, file.getBytes());
-		
+
 		Document document = new Document();
 		document.setDocumentId(documentId);
 		document.setContentType(mediaType.getName());
@@ -109,6 +110,9 @@ public class IndexController {
 		this.elasticService.addDocument(INDEX, documentId, document);
 
 		producer.sendTesseractRequest(documentId, filePath.toString());
-		return HttpResponse.created(document);
+
+		Document doc = new Document();
+		doc.setDocumentId(documentId);
+		return HttpResponse.created(doc);
 	}
 }
