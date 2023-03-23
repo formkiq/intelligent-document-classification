@@ -2,6 +2,11 @@ version: "3.7"
 
 services:
 
+  ui:
+    build: ./ui
+    ports:
+      - 443:443
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
     environment:
