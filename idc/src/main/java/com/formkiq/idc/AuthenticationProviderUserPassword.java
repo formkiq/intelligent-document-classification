@@ -22,6 +22,14 @@ public class AuthenticationProviderUserPassword implements AuthenticationProvide
 			String username = System.getProperty("api.username");
 			String password = System.getProperty("api.password");
 			
+			if (username == null) {
+				username = System.getenv("api.username");
+			}
+			
+			if (password == null) {
+				password = System.getenv("api.password");
+			}
+						
 			if (authenticationRequest.getIdentity().equals(username)
 					&& authenticationRequest.getSecret().equals(password)) {
 				emitter.next(AuthenticationResponse.success((String) authenticationRequest.getIdentity()));
