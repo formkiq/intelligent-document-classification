@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
@@ -76,8 +77,16 @@ class IntegrationTest extends AbstractTest {
 	@Value("${storage.directory}")
 	private String storageDirectory;
 
+	@BeforeAll
+	public void beforeEach() {
+		System.setProperty("api.username", "admin");
+		System.setProperty("api.password", "password");
+	}
+
 	private String getAccessToken() {
-		UsernamePasswordCredentials creds = new UsernamePasswordCredentials("sherlock", "password");
+		UsernamePasswordCredentials creds = new UsernamePasswordCredentials(System.getProperty("api.username"),
+				System.getProperty("api.password"));
+
 		HttpRequest<?> request = HttpRequest.POST("/login", creds);
 		HttpResponse<BearerAccessRefreshToken> rsp = client.toBlocking().exchange(request,
 				BearerAccessRefreshToken.class);
@@ -97,6 +106,19 @@ class IntegrationTest extends AbstractTest {
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
 	public void testElasticSearch(RequestSpecification spec) throws IOException {
 		assertNull(elasticService.getDocument(INDEX, UUID.randomUUID().toString()));
+	}
+
+	@Test
+	@Timeout(unit = TimeUnit.MINUTES, value = 1)
+	public void testLogin() {
+
+		HttpRequest<?> requestWithAuthorization = HttpRequest.POST("/login",
+				Map.of("username", System.getProperty("api.username"), "password", System.getProperty("api.password")))
+				.accept(APPLICATION_JSON_TYPE);
+		HttpResponse<String> response = client.toBlocking().exchange(requestWithAuthorization, String.class);
+
+		assertEquals(OK, response.getStatus());
+		assertTrue(response.body().contains("access_token"));
 	}
 
 	@Test

@@ -16,9 +16,14 @@ public class AuthenticationProviderUserPassword implements AuthenticationProvide
 	@Override
 	public Publisher<AuthenticationResponse> authenticate(@Nullable HttpRequest<?> httpRequest,
 			AuthenticationRequest<?, ?> authenticationRequest) {
+		
 		return Flux.create(emitter -> {
-			if (authenticationRequest.getIdentity().equals("sherlock")
-					&& authenticationRequest.getSecret().equals("password")) {
+			
+			String username = System.getProperty("api.username");
+			String password = System.getProperty("api.password");
+			
+			if (authenticationRequest.getIdentity().equals(username)
+					&& authenticationRequest.getSecret().equals(password)) {
 				emitter.next(AuthenticationResponse.success((String) authenticationRequest.getIdentity()));
 				emitter.complete();
 			} else {

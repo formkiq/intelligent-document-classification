@@ -4,6 +4,8 @@ services:
 
   ui:
     build: ./ui
+    depends_on:
+      - api
     ports:
       - 443:443
 
@@ -49,6 +51,8 @@ services:
       - elasticsearch.url=http://elasticsearch:9200
       - api.ml.url=http://apiml:5000
       - kafka.bootstrap.servers=http://kafka:29092
+      - api.username=admin
+      - api.password=password
     ports:
       - 8080:8080
     volumes:
