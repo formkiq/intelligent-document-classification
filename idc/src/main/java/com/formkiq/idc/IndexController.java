@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import com.formkiq.idc.elasticsearch.Document;
@@ -21,14 +20,16 @@ import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Consumes;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.Options;
 import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.multipart.CompletedFileUpload;
+import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
 
 @Controller
+@Secured(SecurityRule.IS_AUTHENTICATED)
 public class IndexController {
 
 	@Inject
@@ -46,25 +47,10 @@ public class IndexController {
 		return this.elasticService.getDocument(INDEX, documentId);
 	}
 
-	@Options(value = "/documents/{documentId}", consumes = MediaType.APPLICATION_JSON)
-	public HttpResponse<Object> getDocumentOptions(@PathVariable String documentId) {
-		return options();
-	}
-
-	private HttpResponse<Object> options() {
-		return HttpResponse.ok()
-				.headers(Map.of("Access-Control-Allow-Credentials", "true", "Access-Control-Allow-Methods", "*",
-						"Access-Control-Allow-Origin", "*", "Access-Control-Allow-Headers", "*"));
-	}
-
-	@Options(value = "/search", consumes = MediaType.APPLICATION_JSON)
-	public HttpResponse<Object> search() {
-		return options();
-	}
-
 	@Post(value = "/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public HttpResponse<SearchResponse> search(@Body SearchRequest request) {
 
+		System.out.println("FUCKOFF");
 		if (request.getText() == null && request.getTags().isEmpty()) {
 			return HttpResponse.badRequest();
 		}
@@ -80,13 +66,8 @@ public class IndexController {
 		}
 	}
 
-	@Options(value = "/upload", consumes = MediaType.APPLICATION_JSON)
-	public HttpResponse<Object> upload() {
-		return options();
-	}
-
-	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Post("/upload")
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
 	public MutableHttpResponse<Document> upload(CompletedFileUpload file) throws IOException {
 

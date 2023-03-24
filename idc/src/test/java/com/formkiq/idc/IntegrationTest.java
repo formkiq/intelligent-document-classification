@@ -1,11 +1,15 @@
 package com.formkiq.idc;
 
 import static com.formkiq.idc.elasticsearch.ElasticsearchService.INDEX;
-import static org.hamcrest.CoreMatchers.is;
+import static io.micronaut.http.HttpStatus.BAD_REQUEST;
+import static io.micronaut.http.HttpStatus.OK;
+import static io.micronaut.http.HttpStatus.UNAUTHORIZED;
+import static io.micronaut.http.MediaType.APPLICATION_JSON_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,11 +31,18 @@ import com.formkiq.idc.kafka.TesseractProducer;
 import com.nimbusds.jose.util.StandardCharset;
 
 import io.micronaut.context.annotation.Value;
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.MutableHttpResponse;
+import io.micronaut.http.client.HttpClient;
+import io.micronaut.http.client.annotation.Client;
+import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.http.multipart.CompletedFileUpload;
 import io.micronaut.http.server.netty.multipart.NettyCompletedFileUpload;
 import io.micronaut.runtime.EmbeddedApplication;
+import io.micronaut.security.authentication.UsernamePasswordCredentials;
+import io.micronaut.security.token.jwt.render.BearerAccessRefreshToken;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import io.netty.handler.codec.http.multipart.FileUpload;
 import io.netty.handler.codec.http.multipart.MemoryFileUpload;
@@ -47,6 +58,10 @@ class IntegrationTest extends AbstractTest {
 	EmbeddedApplication<?> application;
 
 	@Inject
+	@Client("/")
+	HttpClient client;
+
+	@Inject
 	TesseractMessageConsumer consumer;
 
 	@Inject
@@ -60,6 +75,16 @@ class IntegrationTest extends AbstractTest {
 
 	@Value("${storage.directory}")
 	private String storageDirectory;
+
+	private String getAccessToken() {
+		UsernamePasswordCredentials creds = new UsernamePasswordCredentials("sherlock", "password");
+		HttpRequest<?> request = HttpRequest.POST("/login", creds);
+		HttpResponse<BearerAccessRefreshToken> rsp = client.toBlocking().exchange(request,
+				BearerAccessRefreshToken.class);
+		assertEquals(OK, rsp.getStatus());
+
+		return rsp.body().getAccessToken();
+	}
 
 	private File getFile(final String resourceName) {
 		ClassLoader classLoader = getClass().getClassLoader();
@@ -78,30 +103,67 @@ class IntegrationTest extends AbstractTest {
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
 	public void testOptionsSearch(RequestSpecification spec) throws IOException {
 		SearchRequest search = new SearchRequest();
-		spec.when().contentType(ContentType.JSON).body(search).options("/search").then().statusCode(200);
+		spec.when().contentType(ContentType.JSON)
+				.headers(Map.of("Access-Control-Request-Method", "POST", "Origin", "http://localhost:8080"))
+				.body(search).options("/search").then().statusCode(200);
 	}
 
 	@Test
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
 	public void testOptionsUpload(RequestSpecification spec) throws IOException {
 		SearchRequest search = new SearchRequest();
-		spec.when().contentType(ContentType.JSON).body(search).options("/upload").then().statusCode(200);
+		spec.when().contentType(ContentType.JSON)
+				.headers(Map.of("Access-Control-Request-Method", "POST", "Origin", "http://localhost:8080"))
+				.body(search).options("/upload").then().statusCode(200);
 	}
 
 	@Test
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
-	public void testPostSearch(RequestSpecification spec) {
+	public void testPostSearch() {
+
+		String accessToken = getAccessToken();
 		SearchRequest search = new SearchRequest();
 		search.setText("canada");
-		spec.when().contentType(ContentType.JSON).body(search).post("/search").then().statusCode(200)
-				.body(is("{\"documents\":[]}"));
+
+		HttpRequest<?> requestWithAuthorization = HttpRequest.POST("/search", search).accept(APPLICATION_JSON_TYPE)
+				.bearerAuth(accessToken);
+		HttpResponse<String> response = client.toBlocking().exchange(requestWithAuthorization, String.class);
+
+		assertEquals(OK, response.getStatus());
+		assertEquals("{\"documents\":[]}", response.body());
 	}
 
 	@Test
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
-	public void testPostSearchInvalid(RequestSpecification spec) throws IOException {
+	public void testPostSearchInvalid() throws IOException {
+		String accessToken = getAccessToken();
 		SearchRequest search = new SearchRequest();
-		spec.when().contentType(ContentType.JSON).body(search).post("/search").then().statusCode(400);
+
+		HttpRequest<?> requestWithAuthorization = HttpRequest.POST("/search", search).accept(APPLICATION_JSON_TYPE)
+				.bearerAuth(accessToken);
+
+		try {
+			client.toBlocking().exchange(requestWithAuthorization, String.class);
+			fail();
+		} catch (HttpClientResponseException e) {
+			assertEquals(BAD_REQUEST, e.getResponse().getStatus());
+		}
+	}
+
+	@Test
+	@Timeout(unit = TimeUnit.MINUTES, value = 1)
+	public void testPostSearchMissingAccessToken() throws IOException {
+		SearchRequest search = new SearchRequest();
+
+		HttpRequest<?> requestWithAuthorization = HttpRequest.POST("/search", search).accept(APPLICATION_JSON_TYPE);
+
+		try {
+			client.toBlocking().exchange(requestWithAuthorization, String.class);
+			fail();
+		} catch (HttpClientResponseException e) {
+			assertEquals(UNAUTHORIZED, e.getResponse().getStatus());
+		}
+
 	}
 
 	@Test

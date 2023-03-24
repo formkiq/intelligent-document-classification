@@ -15,10 +15,13 @@ repositories {
 
 dependencies {
 
+	annotationProcessor("io.micronaut.security:micronaut-security-annotations")
     annotationProcessor("io.micronaut:micronaut-http-validation")
     
+    implementation("io.projectreactor:reactor-core:3.5.0")
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-jackson-databind")
+    implementation("io.micronaut.security:micronaut-security-jwt")
     implementation("io.micronaut.crac:micronaut-crac")
     implementation("io.micronaut.kafka:micronaut-kafka")
     implementation("jakarta.annotation:jakarta.annotation-api")
@@ -39,7 +42,6 @@ dependencies {
     testImplementation("org.mock-server:mockserver-netty:5.14.0")
     testImplementation("io.micronaut.test:micronaut-test-rest-assured")
 }
-
 
 application {
     mainClass.set("com.formkiq.idc.Application")
