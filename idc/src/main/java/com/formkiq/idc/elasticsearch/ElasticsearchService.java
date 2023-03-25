@@ -108,8 +108,8 @@ public class ElasticsearchService {
 
 		try {
 
-			GetRequest request = GetRequest
-					.of(i -> i.index(indexName).id(documentId).sourceIncludes(Arrays.asList("contentType", "fileLocation")));
+			GetRequest request = GetRequest.of(i -> i.index(indexName).id(documentId)
+					.sourceIncludes(Arrays.asList("contentType", "fileLocation")));
 			Document document = getClient().get(request, Document.class).source();
 
 			return document;
@@ -143,9 +143,11 @@ public class ElasticsearchService {
 
 	public List<Document> search(String index, String searchText, Map<String, String> tags) throws IOException {
 
+		Integer limit = Integer.valueOf(20);
+
 		try {
 			SearchResponse<Document> searchResponse = getClient().search(s -> {
-				return s.index(index).query(q -> {
+				return s.index(index).size(limit).query(q -> {
 
 					BoolQuery bq = BoolQuery.of(qq -> {
 
@@ -177,7 +179,11 @@ public class ElasticsearchService {
 			}, Document.class);
 
 			List<Hit<Document>> hits = searchResponse.hits().hits();
-			List<Document> list = hits.stream().map(m -> m.source()).collect(Collectors.toList());
+			List<Document> list = hits.stream().map(m -> {
+				Document doc = m.source();
+				doc.setDocumentId(m.id());
+				return doc;
+			}).collect(Collectors.toList());
 
 			return list;
 		} catch (ElasticsearchException e) {

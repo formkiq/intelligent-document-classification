@@ -50,11 +50,6 @@ public class IndexController {
 	@Post(value = "/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public HttpResponse<SearchResponse> search(@Body SearchRequest request) {
 
-		System.out.println("FUCKOFF");
-		if (request.getText() == null && request.getTags().isEmpty()) {
-			return HttpResponse.badRequest();
-		}
-
 		try {
 			List<Document> documents = elasticService.search("documents", request.getText(), request.getTags());
 			documents.forEach(doc -> doc.setContent(null));

@@ -67,7 +67,6 @@ public class DocumentTaggerConsumer {
 
 			String pdfFilename = document.getFileLocation();
 			path = Path.of(storageDirectory, documentId, "image.png");
-			System.out.println("pdfFilename: " + pdfFilename);
 
 			try {
 

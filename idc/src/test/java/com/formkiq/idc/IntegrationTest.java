@@ -1,11 +1,11 @@
 package com.formkiq.idc;
 
 import static com.formkiq.idc.elasticsearch.ElasticsearchService.INDEX;
-import static io.micronaut.http.HttpStatus.BAD_REQUEST;
 import static io.micronaut.http.HttpStatus.OK;
 import static io.micronaut.http.HttpStatus.UNAUTHORIZED;
 import static io.micronaut.http.MediaType.APPLICATION_JSON_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,6 +29,8 @@ import com.formkiq.idc.elasticsearch.Document;
 import com.formkiq.idc.elasticsearch.ElasticsearchService;
 import com.formkiq.idc.kafka.TesseractMessageConsumer;
 import com.formkiq.idc.kafka.TesseractProducer;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.nimbusds.jose.util.StandardCharset;
 
 import io.micronaut.context.annotation.Value;
@@ -75,7 +77,9 @@ class IntegrationTest extends AbstractTest {
 	TesseractProducer producer;
 
 	@Value("${storage.directory}")
-	private String storageDirectory;
+	String storageDirectory;
+
+	Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
 	@BeforeAll
 	public void beforeEach() {
@@ -100,6 +104,14 @@ class IntegrationTest extends AbstractTest {
 		File file = new File(classLoader.getResource(resourceName).getFile());
 		assertTrue(file.exists());
 		return file;
+	}
+
+	private HttpResponse<String> search(SearchRequest search) {
+		String accessToken = getAccessToken();
+		HttpRequest<?> requestWithAuthorization = HttpRequest.POST("/search", search).accept(APPLICATION_JSON_TYPE)
+				.bearerAuth(accessToken);
+		HttpResponse<String> response = client.toBlocking().exchange(requestWithAuthorization, String.class);
+		return response;
 	}
 
 	@Test
@@ -141,35 +153,15 @@ class IntegrationTest extends AbstractTest {
 
 	@Test
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
-	public void testPostSearch() {
+	public void testPostSearch01() {
 
-		String accessToken = getAccessToken();
 		SearchRequest search = new SearchRequest();
 		search.setText("canada");
 
-		HttpRequest<?> requestWithAuthorization = HttpRequest.POST("/search", search).accept(APPLICATION_JSON_TYPE)
-				.bearerAuth(accessToken);
-		HttpResponse<String> response = client.toBlocking().exchange(requestWithAuthorization, String.class);
+		HttpResponse<String> response = search(search);
 
 		assertEquals(OK, response.getStatus());
 		assertEquals("{\"documents\":[]}", response.body());
-	}
-
-	@Test
-	@Timeout(unit = TimeUnit.MINUTES, value = 1)
-	public void testPostSearchInvalid() throws IOException {
-		String accessToken = getAccessToken();
-		SearchRequest search = new SearchRequest();
-
-		HttpRequest<?> requestWithAuthorization = HttpRequest.POST("/search", search).accept(APPLICATION_JSON_TYPE)
-				.bearerAuth(accessToken);
-
-		try {
-			client.toBlocking().exchange(requestWithAuthorization, String.class);
-			fail();
-		} catch (HttpClientResponseException e) {
-			assertEquals(BAD_REQUEST, e.getResponse().getStatus());
-		}
 	}
 
 	@Test
@@ -188,6 +180,7 @@ class IntegrationTest extends AbstractTest {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
 	void testProcessPdf01() throws Exception {
@@ -215,6 +208,19 @@ class IntegrationTest extends AbstractTest {
 
 		path = Path.of(storageDirectory, documentId, "image.png");
 		assertTrue(path.toFile().exists());
+
+		SearchRequest search = new SearchRequest();
+		search.setText("");
+		HttpResponse<String> response = search(search);
+		assertEquals(OK, response.getStatus());
+
+		Map<String, Object> documents = gson.fromJson(response.body(), Map.class);
+		assertTrue(documents.containsKey("documents"));
+		List<Map<String, Object>> list = (List<Map<String, Object>>) documents.get("documents");
+		assertFalse(list.isEmpty());
+
+		assertNotNull(list.get(0).get("documentId"));
+		assertNotNull(list.get(0).get("insertedDate"));
 	}
 
 	@Test
