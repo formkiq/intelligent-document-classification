@@ -8,56 +8,8 @@ import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import SearchIcon from "@mui/icons-material/Search";
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from "../hooks/useAuth";
-
-// Generate Order Data
-function createData(
-  id: number,
-  date: string,
-  name: string,
-  shipTo: string,
-  paymentMethod: string,
-  amount: number,
-) {
-  return { id, date, name, shipTo, paymentMethod, amount };
-}
-
-const rows = [
-  createData(
-    0,
-    '16 Mar, 2019',
-    'Elvis Presley',
-    'Tupelo, MS',
-    'VISA ⠀•••• 3719',
-    312.44,
-  ),
-  createData(
-    1,
-    '16 Mar, 2019',
-    'Paul McCartney',
-    'London, UK',
-    'VISA ⠀•••• 2574',
-    866.99,
-  ),
-  createData(2, '16 Mar, 2019', 'Tom Scholz', 'Boston, MA', 'MC ⠀•••• 1253', 100.81),
-  createData(
-    3,
-    '16 Mar, 2019',
-    'Michael Jackson',
-    'Gary, IN',
-    'AMEX ⠀•••• 2000',
-    654.39,
-  ),
-  createData(
-    4,
-    '15 Mar, 2019',
-    'Bruce Springsteen',
-    'Long Branch, NJ',
-    'VISA ⠀•••• 5919',
-    212.79,
-  ),
-];
 
 export const SearchPage = ({ title, icon }) => {
   
@@ -66,38 +18,45 @@ export const SearchPage = ({ title, icon }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
 
+  useEffect(() => {
+    search("");
+  }, []);
+
   const handleChange = (event) => {
     setSearchTerm(event.target.value);
   };
 
+  function search(text) {
+
+    let search = {"text":text};
+
+    fetch('https://localhost/api/search', {
+      method: 'POST',
+      body: JSON.stringify(search),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + user.access_token,
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data && data.documents) {
+        setResults(data.documents);
+      }
+    })
+    .catch(error => {
+      if (error.message && error.message.includes("401")) {
+        logout();
+      } else {
+        console.error(error); 
+      }
+    });
+  }
+
   const handleKeyDown = (event) => {
 
     if (event.key === 'Enter') {
-
-      let search = {"text":event.target.value};
-
-      fetch('https://localhost/api/search', {
-        method: 'POST',
-        body: JSON.stringify(search),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + user.access_token,
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data && data.documents) {
-          setResults(data.documents);
-        }
-        console.log("DATA: " + JSON.stringify(data));
-      })
-      .catch(error => {
-        if (error.message && error.message.includes("401")) {
-          logout();
-        } else {
-          console.error(error); 
-        }
-      });
+      search(event.target.value);
     }
   };
 
