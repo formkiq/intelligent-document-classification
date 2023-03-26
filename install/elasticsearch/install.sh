@@ -38,3 +38,24 @@ sudo systemctl enable --now elasticsearch.service
 
 sudo systemctl restart elasticsearch.service
 
+# kibana
+sudo yum -y install kibana
+
+sudo systemctl enable --now kibana
+
+/etc/kibana/kibana.yml
+
+server.port: 5601
+
+server.host: "0.0.0.0"
+
+server.publicBaseUrl: "http://<your_server_ip_goes_here>:5601"
+
+elasticsearch.hosts: ["http://127.0.0.1:9200"]
+
+sudo systemctl restart kibana 
+
+systemctl status kibana
+
+http://<your-kibana-server-ip-here>:5601
+
