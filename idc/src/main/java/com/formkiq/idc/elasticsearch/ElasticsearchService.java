@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,7 +21,7 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.GetRequest;
-import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.UpdateRequest;
 import co.elastic.clients.elasticsearch.core.UpdateResponse;
@@ -51,23 +50,10 @@ public class ElasticsearchService {
 
 	public boolean addDocument(String index, String id, Document document) throws IOException {
 
-		Map<String, Object> map = new HashMap<>();
-		if (document.getContent() != null) {
-			map.put("content", document.getContent());
-		}
+		document.setInsertedDate(formatter.format(new Date()));
 
-		if (document.getTags() != null) {
-			map.put("tags", document.getTags());
-		}
-
-		map.put("insertedDate", formatter.format(new Date()));
-		map.put("status", Status.NEW.name());
-		map.put("contentType", document.getContentType());
-		map.put("fileLocation", document.getFileLocation());
-
-		IndexRequest<Map<?, ?>> request = IndexRequest.of(i -> i.index(index).id(id).document(map));
-
-		return getClient().index(request).result() == Result.Created;
+		IndexResponse response = getClient().index(i -> i.index(index).id(id).document(document));
+		return response.result() == Result.Created;
 	}
 
 	private ElasticsearchClient getClient() throws IOException {
