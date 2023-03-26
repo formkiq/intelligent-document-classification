@@ -1,17 +1,4 @@
 
-<br/>
-
-<div align="center" style="margin: 30px;">
-<a href="https://formkiq.com/">
-  <img src="https://github.com/formkiq/formkiq-core/raw/master/images/logo.png" style="width:600px;" align="center" />
-</a>
-<br />
-<br />
-
-</div>
-
-<br />
-
 <div>
 Intelligent Document Classification is an web-based document classification application deployed on the [DAIR Cloud](https://www.canarie.ca/cloud). Using Optical Character Recognition, Natural Language Processing, and Full-Text Search, the Automated Document Classification and Discovery BoosterPack can automate the creation of document metadata.
 <br />
