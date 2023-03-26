@@ -247,6 +247,9 @@ class IntegrationTest extends AbstractTest {
 		assertNotNull(get(documentId));
 		assertEquals(HttpStatus.OK, delete(documentId).getStatus());
 		assertNull(get(documentId));
+		
+		path = Path.of(storageDirectory, documentId, "original");
+		assertFalse(path.toFile().exists());
 	}
 	
 	@Test
