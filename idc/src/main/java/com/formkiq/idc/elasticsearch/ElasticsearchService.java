@@ -20,6 +20,8 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.DeleteRequest;
+import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -54,6 +56,11 @@ public class ElasticsearchService {
 
 		IndexResponse response = getClient().index(i -> i.index(index).id(id).document(document));
 		return response.result() == Result.Created;
+	}
+	
+	public boolean deleteDocument(String index, String id) throws ElasticsearchException, IOException {
+		DeleteResponse response = getClient().delete(DeleteRequest.of(i->i.index(index).id(id)));
+		return response.result() == Result.Deleted;
 	}
 
 	private ElasticsearchClient getClient() throws IOException {

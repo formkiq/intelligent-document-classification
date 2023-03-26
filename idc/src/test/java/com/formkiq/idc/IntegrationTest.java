@@ -36,6 +36,7 @@ import com.nimbusds.jose.util.StandardCharset;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.MutableHttpResponse;
 import io.micronaut.http.client.HttpClient;
@@ -70,6 +71,8 @@ class IntegrationTest extends AbstractTest {
 	@Inject
 	ElasticsearchService elasticService;
 
+	Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+
 	@Inject
 	IndexController indexController;
 
@@ -78,8 +81,6 @@ class IntegrationTest extends AbstractTest {
 
 	@Value("${storage.directory}")
 	String storageDirectory;
-
-	Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
 	@BeforeAll
 	public void beforeEach() {
@@ -112,6 +113,17 @@ class IntegrationTest extends AbstractTest {
 				.bearerAuth(accessToken);
 		HttpResponse<String> response = client.toBlocking().exchange(requestWithAuthorization, String.class);
 		return response;
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<Map<String, Object>> searchResults(SearchRequest search) {
+		HttpResponse<String> response = search(search);
+		assertEquals(OK, response.getStatus());
+
+		Map<String, Object> documents = gson.fromJson(response.body(), Map.class);
+		assertTrue(documents.containsKey("documents"));
+		List<Map<String, Object>> list = (List<Map<String, Object>>) documents.get("documents");
+		return list;
 	}
 
 	@Test
@@ -180,7 +192,6 @@ class IntegrationTest extends AbstractTest {
 
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
 	void testProcessPdf01() throws Exception {
@@ -211,16 +222,15 @@ class IntegrationTest extends AbstractTest {
 
 		SearchRequest search = new SearchRequest();
 		search.setText("");
-		HttpResponse<String> response = search(search);
-		assertEquals(OK, response.getStatus());
-
-		Map<String, Object> documents = gson.fromJson(response.body(), Map.class);
-		assertTrue(documents.containsKey("documents"));
-		List<Map<String, Object>> list = (List<Map<String, Object>>) documents.get("documents");
+		List<Map<String, Object>> list = searchResults(search);
 		assertFalse(list.isEmpty());
 
 		assertNotNull(list.get(0).get("documentId"));
 		assertNotNull(list.get(0).get("insertedDate"));
+		
+		assertNotNull(get(documentId));
+		assertEquals(HttpStatus.OK, delete(documentId).getStatus());
+		assertNull(get(documentId));
 	}
 
 	@Test
@@ -282,5 +292,14 @@ class IntegrationTest extends AbstractTest {
 		MutableHttpResponse<Document> response = indexController.upload(completedFileUpload);
 		String documentId = response.getBody().get().getDocumentId();
 		return documentId;
+	}
+	
+	private HttpResponse<?> delete(String documentId) throws IOException {
+		HttpResponse<?> response = indexController.deleteDocument(documentId);
+		return response;
+	}
+	
+	private Document get(String documentId) throws IOException {
+		return indexController.getDocument(documentId);
 	}
 }

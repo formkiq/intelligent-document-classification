@@ -19,6 +19,7 @@ import io.micronaut.http.MutableHttpResponse;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Consumes;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
@@ -40,6 +41,12 @@ public class IndexController {
 
 	@Value("${storage.directory}")
 	private String storageDirectory;
+
+	@Delete("/documents/{documentId}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public HttpResponse<?> deleteDocument(@PathVariable String documentId) throws IOException {
+		return this.elasticService.deleteDocument(INDEX, documentId) ? HttpResponse.ok() : HttpResponse.notFound();
+	}
 
 	@Get("/documents/{documentId}")
 	@Produces(MediaType.APPLICATION_JSON)
