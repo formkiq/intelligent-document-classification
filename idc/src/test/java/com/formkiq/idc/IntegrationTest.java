@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -44,6 +46,7 @@ import io.micronaut.http.client.annotation.Client;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.http.multipart.CompletedFileUpload;
 import io.micronaut.http.server.netty.multipart.NettyCompletedFileUpload;
+import io.micronaut.http.server.types.files.StreamedFile;
 import io.micronaut.runtime.EmbeddedApplication;
 import io.micronaut.security.authentication.UsernamePasswordCredentials;
 import io.micronaut.security.token.jwt.render.BearerAccessRefreshToken;
@@ -86,6 +89,19 @@ class IntegrationTest extends AbstractTest {
 	public void beforeEach() {
 		System.setProperty("api.username", "admin");
 		System.setProperty("api.password", "password");
+	}
+
+	private HttpResponse<?> delete(String documentId) throws IOException {
+		HttpResponse<?> response = indexController.deleteDocument(documentId);
+		return response;
+	}
+
+	private StreamedFile download(String documentId) throws IOException {
+		return indexController.download(documentId);
+	}
+
+	private Document get(String documentId) throws IOException {
+		return indexController.getDocument(documentId);
 	}
 
 	private String getAccessToken() {
@@ -175,7 +191,7 @@ class IntegrationTest extends AbstractTest {
 		assertEquals(OK, response.getStatus());
 		assertEquals("{\"documents\":[]}", response.body());
 	}
-
+	
 	@Test
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
 	public void testPostSearchMissingAccessToken() throws IOException {
@@ -232,7 +248,7 @@ class IntegrationTest extends AbstractTest {
 		assertEquals(HttpStatus.OK, delete(documentId).getStatus());
 		assertNull(get(documentId));
 	}
-
+	
 	@Test
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
 	void testProcessPng01() throws Exception {
@@ -280,7 +296,54 @@ class IntegrationTest extends AbstractTest {
 		path = Path.of(storageDirectory, documentId, "ocr.txt");
 		assertTrue(path.toFile().exists());
 	}
+	
+	@Test
+	@Timeout(unit = TimeUnit.MINUTES, value = 1)
+	void testProcessTxt01() throws Exception {
 
+		String resourceName = "test.txt";
+		String documentId = upload(resourceName, MediaType.TEXT_PLAIN_TYPE);
+		assertNotNull(documentId);
+
+		String readResource = readResource("response/354b4ad9-d2ff-4596-9cf0-599c40d841f8.txt");
+		addContent(documentId, readResource);
+
+		Document data = elasticService.getDocument(INDEX, documentId);
+		while (!"COMPLETE".equals(data.getStatus())) {
+			data = elasticService.getDocument(INDEX, documentId);
+			TimeUnit.SECONDS.sleep(1);
+		}
+
+		assertEquals(documentId, data.getDocumentId());
+		assertNotNull(data.getInsertedDate());
+		assertEquals("COMPLETE", data.getStatus());
+		assertEquals("text/plain", data.getContentType());
+		assertNotNull(data.getFileLocation());
+		assertTrue(data.getContent().toString().contains("test document"));
+
+		Map<String, Collection<String>> tags = data.getTags();
+		assertEquals(3, tags.size());
+		assertEquals("[invoice]", tags.get("category").toString());
+		assertEquals("[East Repair Inc, East Repatr Inc]", tags.get("ORG").toString());
+
+		List<Document> list = elasticService.search(INDEX, "test document", null);
+		assertEquals(1, list.size());
+
+		list = elasticService.search(INDEX, null, Map.of("LOC", "Chicago"));
+		assertEquals(0, list.size());
+
+		Path path = Path.of(storageDirectory, documentId, "original", resourceName);
+		assertTrue(path.toFile().exists());
+
+		path = Path.of(storageDirectory, documentId, "ocr.txt");
+		assertTrue(path.toFile().exists());
+		
+		StreamedFile download = download(documentId);
+		InputStream inputStream = download.getInputStream();
+		String text = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+		assertEquals("This is a test document!", text);
+	}
+	
 	private String upload(String resourceName, MediaType mediaType) throws IOException {
 		File file = getFile(resourceName);
 
@@ -292,14 +355,5 @@ class IntegrationTest extends AbstractTest {
 		MutableHttpResponse<Document> response = indexController.upload(completedFileUpload);
 		String documentId = response.getBody().get().getDocumentId();
 		return documentId;
-	}
-	
-	private HttpResponse<?> delete(String documentId) throws IOException {
-		HttpResponse<?> response = indexController.deleteDocument(documentId);
-		return response;
-	}
-	
-	private Document get(String documentId) throws IOException {
-		return indexController.getDocument(documentId);
 	}
 }

@@ -6,6 +6,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.formkiq.idc.elasticsearch.Document;
@@ -38,6 +39,9 @@ public class TesseractMessageConsumer {
 
 		System.out.println("processing ocr: " + path + " (" + key + ")");
 
+		Document document = elasticService.getDocumentWithoutContent(INDEX, key);
+		String contentType = document.getContentType();
+
 		try {
 
 			Path ocrFile = Path.of(storageDirectory, key, "ocr.txt");
@@ -54,8 +58,18 @@ public class TesseractMessageConsumer {
 			tesseract.setPageSegMode(1);
 			tesseract.setOcrEngineMode(1);
 
-			String result = tesseract.doOCR(new File(path));
-			Document document = new Document();
+			document = new Document();
+
+			String result = null;
+
+			if (!contentType.startsWith("text/")) {
+
+				result = tesseract.doOCR(new File(path));
+
+			} else {
+				result = Files.readString(Path.of(path));
+			}
+
 			document.setContent(result);
 			document.setStatus(Status.OCR_COMPLETE.name());
 			elasticService.updateDocument(INDEX, key, document);
@@ -68,8 +82,8 @@ public class TesseractMessageConsumer {
 
 		} catch (TesseractException e) {
 			e.printStackTrace();
-			
-			Document document = new Document();
+
+			document = new Document();
 			document.setStatus(Status.OCR_FAILED.name());
 			elasticService.updateDocument(INDEX, key, document);
 		}

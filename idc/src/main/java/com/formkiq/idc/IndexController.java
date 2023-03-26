@@ -2,7 +2,10 @@ package com.formkiq.idc;
 
 import static com.formkiq.idc.elasticsearch.ElasticsearchService.INDEX;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -25,6 +28,7 @@ import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.multipart.CompletedFileUpload;
+import io.micronaut.http.server.types.files.StreamedFile;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
@@ -46,6 +50,20 @@ public class IndexController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public HttpResponse<?> deleteDocument(@PathVariable String documentId) throws IOException {
 		return this.elasticService.deleteDocument(INDEX, documentId) ? HttpResponse.ok() : HttpResponse.notFound();
+	}
+
+	@Get("/documents/{documentId}/content")
+	public StreamedFile download(@PathVariable String documentId) throws IOException {
+
+		Document document = this.elasticService.getDocument(INDEX, documentId);
+		if (document != null) {
+			MediaType mediaType = MediaType.of(document.getContentType());
+			File file = new File(document.getFileLocation());
+			InputStream inputStream = new FileInputStream(file);
+			return new StreamedFile(inputStream, mediaType);
+		}
+
+		throw new IOException("document not found");
 	}
 
 	@Get("/documents/{documentId}")
