@@ -27,3 +27,17 @@ Intelligent Document Classification is an web-based document classification appl
 ✅ Web interface for document upload and document search using ReactJS
 
 ✅ Event Streaming using Apache Kafka
+
+### Run Local
+
+```shell
+# Build application
+docker-compose -f docker-compose-dev.yml build
+
+# Run application
+docker-compose -f docker-compose-dev.yml up -d
+```
+
+## License
+
+Intelligent Document Classifcation is available under the Apache License V2.
