@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# https://maikroservice.com/how-to-install-elasticsearch-kibana-and-winlogbeat-in-your-cloudlab-the-lazy-way
-
 sudo yum -y update
 
-sudo yum -y install java-openjdk java-openjdk-devel
+sudo amazon-linux-extras enable java-openjdk11
+
+sudo yum -y install java-11-openjdk
 
 cat <<EOF | sudo tee /etc/yum.repos.d/elasticsearch.repo
 [elasticsearch-8.x]
@@ -25,38 +25,22 @@ sudo yum makecache
 
 sudo yum -y install elasticsearch
 
-sudo nano /etc/elasticsearch/elasticsearch.yml
+sudo sed -i '/xpack.security.enabled/s/: .*/: false/' /etc/elasticsearch/elasticsearch.yml
+echo 'discovery.seed_hosts: []' | sudo tee -a /etc/elasticsearch/elasticsearch.yml
+echo 'network.host: 0.0.0.0' | sudo tee -a /etc/elasticsearch/elasticsearch.yml
 
-network.host: 0.0.0.0
+sudo systemctl restart elasticsearch
 
-http.port: 9200
-
-discovery.seed_hosts: []
-xpack.security.enabled: false
-
-sudo systemctl enable --now elasticsearch.service
-
-sudo systemctl restart elasticsearch.service
+sudo systemctl enable elasticsearch
 
 # kibana
 sudo yum -y install kibana
 
-sudo systemctl enable --now kibana
+echo 'server.port: 5601' | sudo tee -a /etc/kibana/kibana.yml
+echo 'server.host: "0.0.0.0"' | sudo tee -a /etc/kibana/kibana.yml
+echo 'elasticsearch.hosts: ["http://127.0.0.1:9200"]' | sudo tee -a /etc/kibana/kibana.yml
 
-/etc/kibana/kibana.yml
+echo "server.publicBaseUrl: \"http://${IP_PUBLIC}:5601\"" | sudo tee -a /etc/kibana/kibana.yml
 
-server.port: 5601
-
-server.host: "0.0.0.0"
-
-server.publicBaseUrl: "http://<your_server_ip_goes_here>:5601"
-
-elasticsearch.hosts: ["http://127.0.0.1:9200"]
-
-sudo systemctl restart kibana 
-
-sudo systemctl status kibana
-
-http://<your-kibana-server-ip-here>:5601
-
-# curl -IGET http://127.0.0.1:9200
+sudo systemctl restart kibana
+sudo systemctl enable kibana
