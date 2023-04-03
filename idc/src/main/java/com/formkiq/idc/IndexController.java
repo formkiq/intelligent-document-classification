@@ -88,6 +88,7 @@ public class IndexController {
 			response.setDocuments(documents);
 			return HttpResponse.ok(response);
 		} catch (IOException e) {
+			e.printStackTrace();
 			return HttpResponse.badRequest();
 		}
 	}
