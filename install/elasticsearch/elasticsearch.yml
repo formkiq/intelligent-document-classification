@@ -59,7 +59,7 @@ network.host: 0.0.0.0
 # By default Elasticsearch listens for HTTP traffic on the first free port it
 # finds starting at 9200. Set a specific HTTP port here:
 #
-http.port: 9200
+#http.port: 9200
 #
 # For more information, consult the network module documentation.
 #
@@ -68,6 +68,7 @@ http.port: 9200
 # Pass an initial list of hosts to perform discovery when this node is started:
 # The default list of hosts is ["127.0.0.1", "[::1]"]
 #
+#discovery.seed_hosts: ["host1", "host2"]
 discovery.seed_hosts: []
 #
 # Bootstrap the cluster using an initial set of master-eligible nodes:
@@ -75,12 +76,6 @@ discovery.seed_hosts: []
 #cluster.initial_master_nodes: ["node-1", "node-2"]
 #
 # For more information, consult the discovery and cluster formation module documentation.
-#
-# --------------------------------- Readiness ----------------------------------
-#
-# Enable an unauthenticated TCP readiness endpoint on localhost
-#
-#readiness.port: 9399
 #
 # ---------------------------------- Various -----------------------------------
 #
@@ -91,7 +86,7 @@ discovery.seed_hosts: []
 #----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------
 #
 # The following settings, TLS certificates, and keys have been automatically      
-# generated to configure Elasticsearch security features on 26-03-2023 03:50:37
+# generated to configure Elasticsearch security features on 03-04-2023 03:39:41
 #
 # --------------------------------------------------------------------------------
 
@@ -113,7 +108,7 @@ xpack.security.transport.ssl:
   truststore.path: certs/transport.p12
 # Create a new cluster with the current node only
 # Additional nodes can still join the cluster later
-cluster.initial_master_nodes: ["ip-172-31-5-142.ca-central-1.compute.internal"]
+cluster.initial_master_nodes: ["ip-172-31-8-42.ca-central-1.compute.internal"]
 
 # Allow HTTP API connections from anywhere
 # Connections are encrypted and require user authentication

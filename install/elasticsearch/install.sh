@@ -55,7 +55,8 @@ elasticsearch.hosts: ["http://127.0.0.1:9200"]
 
 sudo systemctl restart kibana 
 
-systemctl status kibana
+sudo systemctl status kibana
 
 http://<your-kibana-server-ip-here>:5601
 
+# curl -IGET http://127.0.0.1:9200
