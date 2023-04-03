@@ -47,11 +47,11 @@ services:
       - kafka
     environment:
       - storage.directory=/app/documents
-      - elasticsearch.url=http://${ELASTICSEARCH_IP}:9200
+      - elasticsearch.url=http://${AZL_IP}:9200
       - api.ml.url=http://apiml:5000
       - kafka.bootstrap.servers=http://kafka:29092
-      - api.username=admin
-      - api.password=555Houston
+      - api.username=${API_USERNAME}
+      - api.password=${API_PASSWORD}
     ports:
       - 8080:8080
     volumes:

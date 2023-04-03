@@ -30,27 +30,33 @@ export const SearchPage = ({ title, icon }) => {
 
     let search = {"text":text};
 
-    fetch('https://localhost/api/search', {
-      method: 'POST',
-      body: JSON.stringify(search),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + user.access_token,
-      }
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data && data.documents) {
-        setResults(data.documents);
-      }
-    })
-    .catch(error => {
-      if (error.message && error.message.includes("401")) {
-        logout();
-      } else {
-        console.error(error); 
-      }
-    });
+    if (user.access_token) {
+      fetch('/api/search', {
+        method: 'POST',
+        body: JSON.stringify(search),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + user.access_token,
+        }
+      })
+      .then(response => {
+
+        if (response.ok) {
+          let data = response.json();
+          if (data && data.documents) {
+            setResults(data.documents);
+          }
+        } else if (response.status === 401) {
+          console.log("LOGOUT!");
+          logout();
+        } else {
+          throw new Error(response.status);
+        }
+      })
+      .catch(error => {
+        console.log(error);
+      });
+    }
   }
 
   const handleKeyDown = (event) => {

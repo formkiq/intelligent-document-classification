@@ -10,7 +10,7 @@ export const AuthProvider = ({ children, userData }) => {
 
   const login = async (data) => {
 
-    fetch('https://localhost/api/login', {
+    fetch('/api/login', {
       method: 'POST',
       body: JSON.stringify({"username":data.email, "password": data.password}),
       headers: {

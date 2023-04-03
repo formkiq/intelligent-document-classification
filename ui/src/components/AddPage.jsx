@@ -19,7 +19,7 @@ export const AddPage = ({ title, icon }) => {
     const formData = new FormData();
     formData.append('file', acceptedFiles[0]);
     
-    axios.post('https://localhost/api/upload', formData, 
+    axios.post('/api/upload', formData, 
       { 
         headers: {
           'Authorization': 'Bearer ' + user.access_token,
