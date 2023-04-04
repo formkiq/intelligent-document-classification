@@ -7,7 +7,11 @@ services:
     depends_on:
       - api
     ports:
+      - 80:80
       - 443:443
+    volumes:
+      - ./certbot/www:/var/www/certbot/:ro
+      - ./certbot/conf/:/etc/nginx/ssl/:ro
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
@@ -56,6 +60,14 @@ services:
       - 8080:8080
     volumes:
       - documents:/app/documents
+
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - ./certbot/www/:/var/www/certbot/:rw
+      - ./certbot/conf/:/etc/letsencrypt/:rw
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
 volumes:
   documents:
