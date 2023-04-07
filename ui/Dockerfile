@@ -10,7 +10,6 @@ RUN npm install
 
 COPY nginx.conf ./
 RUN SERVER_NAME=$SERVER_NAME uri=\$uri host=\$host request_uri=\$request_uri envsubst < nginx.conf > /app/default.conf
-RUN cat /app/default.conf
 COPY src/ ./src
 COPY public/ ./public
 
