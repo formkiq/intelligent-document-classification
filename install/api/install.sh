@@ -8,14 +8,28 @@ sudo curl -L https://github.com/docker/compose/releases/download/1.22.0/docker-c
 
 sudo chmod +x /usr/local/bin/docker-compose
 
-# sudo usermod -a -G docker ec2-user
-# id ec2-user
-# newgrp docker
+#usermod -a -G docker ${USER}
+#newgrp docker
 
 sudo systemctl enable docker.service
 
 sudo systemctl start docker.service
 
-echo "${AZL_IP}  elasticsearch" | sudo tee -a /etc/hosts
+sudo rm -r -f /etc/letsencrypt/
+path="/etc/letsencrypt/live/app.${IP_PUBLIC}.nip.io"
+sudo mkdir -p "$path"
 
-# curl -IGET http://elasticsearch:9200
+docker-compose -f ../../docker-compose-prod.yml run --rm --entrypoint "\
+  openssl req -x509 -nodes -newkey rsa:4096 -days 1000\
+    -keyout '$path/privkey.pem' \
+    -out '$path/fullchain.pem' \
+    -subj '/CN=localhost'" certbot
+
+docker-compose -f ../../docker-compose-prod.yml up -d
+
+sudo rm -r -f /etc/letsencrypt/
+docker run -it --rm -v /var/www/certbot/:/var/www/certbot/ -v /etc/letsencrypt/:/etc/letsencrypt/ certbot/certbot certonly --webroot --register-unsafely-without-email --agree-tos --webroot-path=/var/www/certbot/ -d "app.${IP_PUBLIC}.nip.io"
+
+docker-compose down
+
+docker-compose -f ../../docker-compose-prod.yml build --build-arg SERVER_NAME="app.${IP_PUBLIC}.nip.io" --no-cache
