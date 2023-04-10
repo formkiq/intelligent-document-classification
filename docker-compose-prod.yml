@@ -3,7 +3,10 @@ version: "3.7"
 services:
 
   ui:
-    build: ./ui
+    build: 
+      context: ./ui
+      args:
+        SERVER_NAME: app.${IP_PUBLIC}.nip.io
     depends_on:
       - api
     ports:
