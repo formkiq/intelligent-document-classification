@@ -43,14 +43,15 @@ export const SearchPage = ({ title, icon }) => {
 
         if (response.ok) {
           let data = response.json();
-          if (data && data.documents) {
-            setResults(data.documents);
-          }
+          return data;
         } else if (response.status === 401) {
-          console.log("LOGOUT!");
           logout();
-        } else {
-          throw new Error(response.status);
+          return "";
+        }
+      })
+      .then(data => {
+        if (data && data.documents) {
+          setResults(data.documents);
         }
       })
       .catch(error => {

@@ -1,6 +1,7 @@
 FROM node:19.8.1-alpine3.17 as builder
 
 ARG SERVER_NAME
+ARG NGINX_CONFIG=nginx.conf
 
 WORKDIR /app
 
@@ -8,14 +9,12 @@ RUN apk add gettext
 COPY package*.json ./
 RUN npm install
 
-COPY nginx.conf ./
-RUN SERVER_NAME=$SERVER_NAME uri=\$uri host=\$host request_uri=\$request_uri envsubst < nginx.conf > /app/default.conf
+COPY $NGINX_CONFIG ./
+RUN SERVER_NAME=$SERVER_NAME uri=\$uri host=\$host request_uri=\$request_uri envsubst < $NGINX_CONFIG > /app/default.conf
 COPY src/ ./src
 COPY public/ ./public
 
 RUN npm run build
-
-COPY localhost.conf ./
 
 FROM nginx:1.23
 
