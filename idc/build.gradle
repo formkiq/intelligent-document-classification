@@ -1,9 +1,10 @@
 plugins {
-    id("com.github.johnrengelman.shadow") version "7.1.2"
-    id("io.micronaut.crac") version "3.7.3"
-    id("io.micronaut.application") version "3.7.3"
-    id("io.micronaut.aot") version "3.7.3"
-    id("io.micronaut.test-resources") version "3.7.3"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("io.micronaut.crac") version "3.7.7"
+    id("io.micronaut.application") version "3.7.7"
+    id("io.micronaut.aot") version "3.7.7"
+    id("io.micronaut.test-resources") version "3.7.7"
+    id("com.github.ben-manes.versions") version "0.46.0"
 }
 
 version = "0.1"
@@ -13,12 +14,16 @@ repositories {
     mavenCentral()
 }
 
+micronaut {
+    version = "3.8.8"
+}
+
 dependencies {
 
 	annotationProcessor("io.micronaut.security:micronaut-security-annotations")
     annotationProcessor("io.micronaut:micronaut-http-validation")
     
-    implementation("io.projectreactor:reactor-core:3.5.0")
+    implementation("io.projectreactor:reactor-core:3.5.4")
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-jackson-databind")
     implementation("io.micronaut.security:micronaut-security-jwt")
@@ -29,15 +34,14 @@ dependencies {
     compileOnly("org.graalvm.nativeimage:svm")
 
     implementation("io.micronaut:micronaut-validation")
-    implementation("net.sourceforge.tess4j:tess4j:5.6.0")
+    implementation("net.sourceforge.tess4j:tess4j:5.7.0")
 	implementation("org.slf4j:slf4j-simple:2.0.6")
-	implementation("org.apache.opennlp:opennlp-tools:2.1.1")
-    implementation("com.google.code.gson:gson:2.10")
+    implementation("com.google.code.gson:gson:2.10.1")
     
-    implementation 'co.elastic.clients:elasticsearch-java:8.6.2'
+    implementation 'co.elastic.clients:elasticsearch-java:8.7.0'
     
-    testImplementation("org.testcontainers:kafka:1.17.6")
-	testImplementation("org.testcontainers:elasticsearch:1.17.6")
+    testImplementation("org.testcontainers:kafka:1.18.0")
+	testImplementation("org.testcontainers:elasticsearch:1.18.0")
     
     testImplementation("org.mock-server:mockserver-netty:5.14.0")
     testImplementation("io.micronaut.test:micronaut-test-rest-assured")
