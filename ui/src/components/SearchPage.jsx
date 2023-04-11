@@ -1,6 +1,8 @@
 import { Container, TextField, InputAdornment } from "@mui/material";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import ButtonGroup from "@mui/material/ButtonGroup";
 import Typography from "@mui/material/Typography";
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -14,6 +16,7 @@ import { useAuth } from "../hooks/useAuth";
 export const SearchPage = ({ title, icon }) => {
   
   const { logout } = useAuth();
+  const [loading, setLoading] = useState(false);
   const user = JSON.parse(window.localStorage.getItem("user"));
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
@@ -30,7 +33,7 @@ export const SearchPage = ({ title, icon }) => {
 
     let search = {"text":text};
 
-    if (user.access_token) {
+    if (user && user.access_token) {
       fetch('/api/search', {
         method: 'POST',
         body: JSON.stringify(search),
@@ -65,6 +68,65 @@ export const SearchPage = ({ title, icon }) => {
     if (event.key === 'Enter') {
       search(event.target.value);
     }
+  };
+
+  function downloadDocument(documentId) {
+    
+    if (user && user.access_token && documentId) {
+      fetch('/api/documents/' + documentId + '/content', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + user.access_token,
+        }
+      })
+      .then(res => res.blob())
+      .then(data => {
+        var a = document.createElement("a");
+        a.href = window.URL.createObjectURL(data);
+        //a.download = "FILENAME";
+        a.click();
+      })
+      .catch(error => {
+        console.log(error);
+      });
+    }
+
+    setLoading(false);
+  };
+
+  function deleteDocument(documentId) {
+    setLoading(true);
+    
+    if (user && user.access_token && documentId) {
+      fetch('/api/documents/' + documentId, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + user.access_token,
+        }
+      })
+      .then(response => {
+
+        if (response.ok) {
+
+          setResults((prevResults) =>
+            prevResults.filter((row, index) => row.documentId !== documentId)
+          );
+
+          let data = response.json();
+          return data;
+        } else if (response.status === 401) {
+          logout();
+          return "";
+        }
+      })
+      .catch(error => {
+        console.log(error);
+      });
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -127,7 +189,12 @@ export const SearchPage = ({ title, icon }) => {
                   }
                   </TableCell>
                   <TableCell>{row.status}</TableCell>
-                  <TableCell align="right"></TableCell>
+                  <TableCell align="right">
+                    <ButtonGroup variant="contained" aria-label="outlined primary button group">
+                      <Button onClick={(event) => downloadDocument(row.documentId)}>Download</Button>
+                      <Button variant="outlined" onClick={(event) => deleteDocument(row.documentId)}>{ loading ? "Deleting" : "Delete"}</Button>
+                    </ButtonGroup>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
