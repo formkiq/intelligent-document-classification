@@ -43,7 +43,7 @@ dependencies {
     testImplementation("org.testcontainers:kafka:1.18.0")
 	testImplementation("org.testcontainers:elasticsearch:1.18.0")
     
-    testImplementation("org.mock-server:mockserver-netty:5.14.0")
+    testImplementation("org.mock-server:mockserver-netty:5.15.0")
     testImplementation("io.micronaut.test:micronaut-test-rest-assured")
 }
 
