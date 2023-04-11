@@ -53,7 +53,9 @@ public class IndexController {
 
 		Path filePath = Path.of(storageDirectory, documentId);
 
-		Files.walk(filePath).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+		if (filePath.toFile().exists()) {
+			Files.walk(filePath).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+		}
 
 		return this.elasticService.deleteDocument(INDEX, documentId) ? HttpResponse.ok() : HttpResponse.notFound();
 	}
