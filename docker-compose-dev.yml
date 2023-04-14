@@ -44,7 +44,7 @@ services:
       - documents:/app/documents
 
   api:
-    build: ./idc
+    build: ./api
     depends_on:
       - elasticsearch
       - apiml

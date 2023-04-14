@@ -2,12 +2,13 @@
 
 sudo yum -y update
 
-sudo yum -y install docker
+sudo yum -y install docker git
 
 sudo curl -L https://github.com/docker/compose/releases/download/1.22.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
 
 sudo chmod +x /usr/local/bin/docker-compose
 
+# git clone https://github.com/formkiq/intelligent-document-classification.git
 #usermod -a -G docker ${USER}
 #newgrp docker
 

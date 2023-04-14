@@ -43,13 +43,15 @@ services:
     build: ./api_ml
     environment:
       - STORAGE_DIRECTORY=/app/documents
+    security_opt:
+      - seccomp:unconfined
     ports:
       - 5000:5000
     volumes:
       - documents:/app/documents
 
   api:
-    build: ./idc
+    build: ./api
     depends_on:
       - apiml
       - kafka
