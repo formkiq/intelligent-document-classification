@@ -191,7 +191,7 @@ class IntegrationTest extends AbstractTest {
 		assertEquals(OK, response.getStatus());
 		assertEquals("{\"documents\":[]}", response.body());
 	}
-	
+
 	@Test
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
 	public void testPostSearchMissingAccessToken() throws IOException {
@@ -227,14 +227,14 @@ class IntegrationTest extends AbstractTest {
 		assertNotNull(data.getFileLocation());
 		assertEquals("application/pdf", data.getContentType());
 
-		Path path = Path.of(storageDirectory, documentId, "original", resourceName);
+		Path path = Path.of(storageDirectory, documentId, resourceName);
 		assertTrue(path.toFile().exists());
 
 		path = Path.of(storageDirectory, documentId, "ocr.txt");
 		assertTrue(path.toFile().exists());
 
 		path = Path.of(storageDirectory, documentId, "image.png");
-		assertTrue(path.toFile().exists());
+		assertFalse(path.toFile().exists());
 
 		SearchRequest search = new SearchRequest();
 		search.setText("");
@@ -244,15 +244,15 @@ class IntegrationTest extends AbstractTest {
 		assertNotNull(list.get(0).get("documentId"));
 		assertNotNull(list.get(0).get("insertedDate"));
 		assertEquals("example.pdf", list.get(0).get("filename"));
-		
+
 		assertNotNull(get(documentId));
 		assertEquals(HttpStatus.OK, delete(documentId).getStatus());
 		assertNull(get(documentId));
-		
-		path = Path.of(storageDirectory, documentId, "original");
+
+		path = Path.of(storageDirectory, documentId);
 		assertFalse(path.toFile().exists());
 	}
-	
+
 	@Test
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
 	void testProcessPng01() throws Exception {
@@ -280,7 +280,7 @@ class IntegrationTest extends AbstractTest {
 		Map<String, Collection<String>> tags = data.getTags();
 		assertEquals(3, tags.size());
 		assertEquals("[invoice]", tags.get("category").toString());
-		assertEquals("[East Repair Inc, Smith Job Smith, East Repatr Inc]", tags.get("org").toString());
+		assertEquals("[East Repair Inc, East Repatr Inc, Smith Job Smith]", tags.get("org").toString());
 
 		List<Document> list = elasticService.search(INDEX, "Repair Inc", null);
 		assertEquals(1, list.size());
@@ -294,13 +294,13 @@ class IntegrationTest extends AbstractTest {
 		list = elasticService.search(INDEX, null, Map.of("loc", "Chicago"));
 		assertEquals(0, list.size());
 
-		Path path = Path.of(storageDirectory, documentId, "original", resourceName);
+		Path path = Path.of(storageDirectory, documentId, resourceName);
 		assertTrue(path.toFile().exists());
 
 		path = Path.of(storageDirectory, documentId, "ocr.txt");
 		assertTrue(path.toFile().exists());
 	}
-	
+
 	@Test
 	@Timeout(unit = TimeUnit.MINUTES, value = 1)
 	void testProcessTxt01() throws Exception {
@@ -328,7 +328,7 @@ class IntegrationTest extends AbstractTest {
 		Map<String, Collection<String>> tags = data.getTags();
 		assertEquals(3, tags.size());
 		assertEquals("[invoice]", tags.get("category").toString());
-		assertEquals("[East Repair Inc, Smith Job Smith, East Repatr Inc]", tags.get("org").toString());
+		assertEquals("[East Repair Inc, East Repatr Inc, Smith Job Smith]", tags.get("org").toString());
 
 		List<Document> list = elasticService.search(INDEX, "test document", null);
 		assertEquals(1, list.size());
@@ -336,18 +336,18 @@ class IntegrationTest extends AbstractTest {
 		list = elasticService.search(INDEX, null, Map.of("loc", "Chicago"));
 		assertEquals(0, list.size());
 
-		Path path = Path.of(storageDirectory, documentId, "original", resourceName);
+		Path path = Path.of(storageDirectory, documentId, resourceName);
 		assertTrue(path.toFile().exists());
 
 		path = Path.of(storageDirectory, documentId, "ocr.txt");
 		assertTrue(path.toFile().exists());
-		
+
 		HttpResponse<StreamedFile> download = download(documentId);
 		InputStream inputStream = download.body().getInputStream();
 		String text = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 		assertEquals("This is a test document!", text);
 	}
-	
+
 	private String upload(String resourceName, MediaType mediaType) throws IOException {
 		File file = getFile(resourceName);
 

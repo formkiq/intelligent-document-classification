@@ -110,8 +110,8 @@ public class IndexController {
 
 		String documentId = UUID.randomUUID().toString();
 
-		Path filePath = Path.of(storageDirectory, documentId, "original", file.getFilename());
-		Files.createDirectories(Path.of(storageDirectory, documentId, "original"));
+		Path filePath = Path.of(storageDirectory, documentId, file.getFilename());
+		Files.createDirectories(Path.of(storageDirectory, documentId));
 		Files.write(filePath, file.getBytes());
 
 		Document document = new Document();

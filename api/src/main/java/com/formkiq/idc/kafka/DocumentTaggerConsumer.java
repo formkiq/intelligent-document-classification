@@ -16,8 +16,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -139,7 +141,9 @@ public class DocumentTaggerConsumer {
 						}).map(m -> m.get("word")).collect(Collectors.toSet());
 
 						if (!values.isEmpty()) {
-							tags.put(e.getKey().toLowerCase(), values);
+							List<String> strs = new ArrayList<>(values);
+							Collections.sort(strs);
+							tags.put(e.getKey().toLowerCase(), strs);
 						}
 					}
 				}
