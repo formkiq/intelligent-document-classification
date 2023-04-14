@@ -5,11 +5,11 @@ import torch
 from PIL import Image
 import os
 
-titleTokenizer = AutoTokenizer.from_pretrained("deep-learning-analytics/automatic-title-generation")
-titleModel = AutoModelForSeq2SeqLM.from_pretrained("deep-learning-analytics/automatic-title-generation")
+titleTokenizer = AutoTokenizer.from_pretrained("snrspeaks/t5-one-line-summary")
+titleModel = AutoModelForSeq2SeqLM.from_pretrained("snrspeaks/t5-one-line-summary")
 
-tokenizer = AutoTokenizer.from_pretrained("dslim/bert-base-NER")
-nerModel = AutoModelForTokenClassification.from_pretrained("dslim/bert-base-NER")
+tokenizer = AutoTokenizer.from_pretrained("dslim/bert-large-NER")
+nerModel = AutoModelForTokenClassification.from_pretrained("dslim/bert-large-NER")
 
 processor = AutoImageProcessor.from_pretrained("microsoft/dit-base-finetuned-rvlcdip")
 imageModel = AutoModelForImageClassification.from_pretrained("microsoft/dit-base-finetuned-rvlcdip")
@@ -25,16 +25,58 @@ def load_ocr_file(documentId):
     else:
         return None
 
+def group_by_key(lst, key):
+    grouped = {}
+    for d in lst:
+        grouped.setdefault(d[key], []).append(d)
+    return grouped
+
 def named_entity_recognition(ocr):
 
   if ocr is not None:
-    nlp = pipeline("ner", model=nerModel, tokenizer=tokenizer, aggregation_strategy="simple")
+    nlp = pipeline("ner", model=nerModel, tokenizer=tokenizer)
     ner_results = nlp(ocr)
-    for x in ner_results:
-      x["score"] = str(x["score"])
-    return ner_results
 
-  return []
+    newlist = []
+    element = {}
+
+    for ner_dict in ner_results:
+
+        if ner_dict["word"].startswith("##"):
+            ner_dict["word"] = ner_dict["word"].replace("##","")
+
+        if ner_dict["entity"].startswith("B"):
+
+            element = {}
+            newlist.append(element)
+            element["word"] = ner_dict["word"]
+            element["score"] = str(ner_dict["score"])
+            element["start"] = ner_dict["start"]
+            element["end"] = ner_dict["end"]
+            element["entity"] = ner_dict["entity"].replace("B-","")
+
+        elif ner_dict['entity'].startswith("I"):
+
+            if element["end"] != ner_dict["start"]:
+                element["word"] += " " + ner_dict["word"]
+            else:
+                element["word"] += ner_dict["word"]
+
+            element["start"] = ner_dict["start"]
+            element["end"] = ner_dict["end"]
+
+    groupby = group_by_key(newlist, "entity")
+
+    for group in groupby:
+        list = groupby[group]
+        for item in list:
+            del item["start"]
+            del item["end"]
+            del item["entity"]
+
+    return groupby
+
+  return {}
 
 def image_classification(path):
 
@@ -58,10 +100,22 @@ def image_classification(path):
     return "unknown"
 
 def generate_title(text):
-  max_len = 120
-  tokenized_inputs = titleTokenizer(text, padding='max_length', truncation=True, max_length=max_len, return_attention_mask=True, return_tensors='pt')
 
-  inputs={"input_ids": tokenized_inputs['input_ids'], "attention_mask": tokenized_inputs['attention_mask']}
-  results= titleModel.generate(input_ids= inputs['input_ids'], attention_mask=inputs['attention_mask'], do_sample=True, max_length=120, top_k=120, top_p=0.98, early_stopping=True, num_return_sequences=1)
-  answer = titleTokenizer.decode(results[0], skip_special_tokens=True)
-  return answer
+  input_ids = titleTokenizer.encode("summarize: " + text, return_tensors="pt", add_special_tokens=True)
+
+  generated_ids = titleModel.generate(
+    input_ids=input_ids,
+    num_beams=5,
+    max_length=50,
+    repetition_penalty=2.5,
+    length_penalty=1,
+    early_stopping=True,
+    num_return_sequences=3,
+  )
+
+  preds = [
+    titleTokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+    for g in generated_ids
+  ]
+
+  return preds[0]
