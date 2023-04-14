@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import com.formkiq.idc.elasticsearch.Document;
 import com.formkiq.idc.elasticsearch.ElasticsearchService;
+import com.formkiq.idc.elasticsearch.Status;
 import com.formkiq.idc.kafka.TesseractProducer;
 
 import io.micronaut.context.annotation.Value;
@@ -61,17 +62,17 @@ public class IndexController {
 	}
 
 	@Get("/documents/{documentId}/content")
-	public StreamedFile download(@PathVariable String documentId) throws IOException {
+	public HttpResponse<StreamedFile> download(@PathVariable String documentId) throws IOException {
 
 		Document document = this.elasticService.getDocument(INDEX, documentId);
 		if (document != null) {
 			MediaType mediaType = MediaType.of(document.getContentType());
 			File file = new File(document.getFileLocation());
 			InputStream inputStream = new FileInputStream(file);
-			return new StreamedFile(inputStream, mediaType);
+			return HttpResponse.ok(new StreamedFile(inputStream, mediaType));
 		}
 
-		throw new IOException("document not found");
+		return HttpResponse.notFound();
 	}
 
 	@Get("/documents/{documentId}")
@@ -114,9 +115,12 @@ public class IndexController {
 		Files.write(filePath, file.getBytes());
 
 		Document document = new Document();
+		document.setStatus(Status.NEW.name());
 		document.setDocumentId(documentId);
 		document.setContentType(mediaType.getName());
 		document.setFileLocation(filePath.toString());
+		document.setFilename(file.getFilename());
+		
 		this.elasticService.addDocument(INDEX, documentId, document);
 
 		producer.sendTesseractRequest(documentId, filePath.toString());

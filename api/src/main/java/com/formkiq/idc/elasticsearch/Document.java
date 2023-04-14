@@ -10,6 +10,7 @@ public class Document {
 	private String contentType;
 	private String documentId;
 	private String fileLocation;
+	private String filename;
 	private String insertedDate;
 	private String status;
 	private Map<String, Collection<String>> tags = Collections.emptyMap();
@@ -33,6 +34,10 @@ public class Document {
 
 	public String getFileLocation() {
 		return fileLocation;
+	}
+
+	public String getFilename() {
+		return filename;
 	}
 
 	public String getInsertedDate() {
@@ -65,6 +70,10 @@ public class Document {
 
 	public void setFileLocation(String fileLocation) {
 		this.fileLocation = fileLocation;
+	}
+
+	public void setFilename(String filename) {
+		this.filename = filename;
 	}
 
 	public void setInsertedDate(String insertedDate) {

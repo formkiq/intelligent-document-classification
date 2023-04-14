@@ -96,7 +96,7 @@ class IntegrationTest extends AbstractTest {
 		return response;
 	}
 
-	private StreamedFile download(String documentId) throws IOException {
+	private HttpResponse<StreamedFile> download(String documentId) throws IOException {
 		return indexController.download(documentId);
 	}
 
@@ -243,6 +243,7 @@ class IntegrationTest extends AbstractTest {
 
 		assertNotNull(list.get(0).get("documentId"));
 		assertNotNull(list.get(0).get("insertedDate"));
+		assertEquals("example.pdf", list.get(0).get("filename"));
 		
 		assertNotNull(get(documentId));
 		assertEquals(HttpStatus.OK, delete(documentId).getStatus());
@@ -279,7 +280,7 @@ class IntegrationTest extends AbstractTest {
 		Map<String, Collection<String>> tags = data.getTags();
 		assertEquals(3, tags.size());
 		assertEquals("[invoice]", tags.get("category").toString());
-		assertEquals("[East Repair Inc, East Repatr Inc]", tags.get("ORG").toString());
+		assertEquals("[East Repair Inc, Smith Job Smith, East Repatr Inc]", tags.get("org").toString());
 
 		List<Document> list = elasticService.search(INDEX, "Repair Inc", null);
 		assertEquals(1, list.size());
@@ -287,10 +288,10 @@ class IntegrationTest extends AbstractTest {
 		list = elasticService.search(INDEX, null, Map.of("category", "invoice"));
 		assertEquals(1, list.size());
 
-		list = elasticService.search(INDEX, null, Map.of("LOC", "New York"));
+		list = elasticService.search(INDEX, null, Map.of("loc", "New York"));
 		assertEquals(1, list.size());
 
-		list = elasticService.search(INDEX, null, Map.of("LOC", "Chicago"));
+		list = elasticService.search(INDEX, null, Map.of("loc", "Chicago"));
 		assertEquals(0, list.size());
 
 		Path path = Path.of(storageDirectory, documentId, "original", resourceName);
@@ -327,12 +328,12 @@ class IntegrationTest extends AbstractTest {
 		Map<String, Collection<String>> tags = data.getTags();
 		assertEquals(3, tags.size());
 		assertEquals("[invoice]", tags.get("category").toString());
-		assertEquals("[East Repair Inc, East Repatr Inc]", tags.get("ORG").toString());
+		assertEquals("[East Repair Inc, Smith Job Smith, East Repatr Inc]", tags.get("org").toString());
 
 		List<Document> list = elasticService.search(INDEX, "test document", null);
 		assertEquals(1, list.size());
 
-		list = elasticService.search(INDEX, null, Map.of("LOC", "Chicago"));
+		list = elasticService.search(INDEX, null, Map.of("loc", "Chicago"));
 		assertEquals(0, list.size());
 
 		Path path = Path.of(storageDirectory, documentId, "original", resourceName);
@@ -341,8 +342,8 @@ class IntegrationTest extends AbstractTest {
 		path = Path.of(storageDirectory, documentId, "ocr.txt");
 		assertTrue(path.toFile().exists());
 		
-		StreamedFile download = download(documentId);
-		InputStream inputStream = download.getInputStream();
+		HttpResponse<StreamedFile> download = download(documentId);
+		InputStream inputStream = download.body().getInputStream();
 		String text = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 		assertEquals("This is a test document!", text);
 	}

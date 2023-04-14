@@ -116,15 +116,20 @@ public class DocumentTaggerConsumer {
 				}
 
 				if (map.containsKey("namedEntity")) {
-					List<Map<String, String>> entities = (List<Map<String, String>>) map.get("namedEntity");
 
-					Map<String, Set<String>> list = entities.stream().filter(e -> {
-						float score = Float.valueOf(e.get("score")).floatValue();
-						return score >= ENTITY_MIN_SCORE;
-					}).map(e -> Map.of(e.get("entity_group"), e.get("word"))).flatMap(e -> e.entrySet().stream())
-							.collect(Collectors.groupingBy(Map.Entry::getKey,
-									Collectors.mapping(Map.Entry::getValue, Collectors.toSet())));
-					tags.putAll(list);
+					Map<String, List<Map<String, String>>> entities = (Map<String, List<Map<String, String>>>) map
+							.get("namedEntity");
+
+					for (Map.Entry<String, List<Map<String, String>>> e : entities.entrySet()) {
+						List<String> values = e.getValue().stream().filter(m -> {
+							float score = Float.valueOf(m.get("score")).floatValue();
+							return score >= ENTITY_MIN_SCORE;
+						}).map(m -> m.get("word")).collect(Collectors.toList());
+
+						if (!values.isEmpty()) {
+							tags.put(e.getKey().toLowerCase(), values);
+						}
+					}
 				}
 			}
 

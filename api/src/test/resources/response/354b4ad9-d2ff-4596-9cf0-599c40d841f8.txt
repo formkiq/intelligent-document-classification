@@ -1,0 +1,75 @@
+{
+  "category": "invoice",
+  "namedEntity": {
+    "ORG": [
+      {
+        "word": "East Repair Inc",
+        "score": "0.99926656"
+      },
+      {
+        "word": "B",
+        "score": "0.8057382"
+      },
+      {
+        "word": "Smith Job Smith",
+        "score": "0.91857624"
+      },
+      {
+        "word": "East Repatr Inc",
+        "score": "0.9992711"
+      }
+    ],
+    "LOC": [
+      {
+        "word": "Harvest Lane",
+        "score": "0.972969"
+      },
+      {
+        "word": "New York",
+        "score": "0.9903414"
+      },
+      {
+        "word": "NY",
+        "score": "0.9651409"
+      },
+      {
+        "word": "2",
+        "score": "0.71257484"
+      },
+      {
+        "word": "C",
+        "score": "0.91221243"
+      },
+      {
+        "word": "ovet Square",
+        "score": "0.3822863"
+      },
+      {
+        "word": "Pineview Dive",
+        "score": "0.98931175"
+      },
+      {
+        "word": "New York",
+        "score": "0.99500555"
+      },
+      {
+        "word": "NY",
+        "score": "0.99293196"
+      },
+      {
+        "word": "Cambidgo",
+        "score": "0.99547184"
+      },
+      {
+        "word": "MA",
+        "score": "0.9990219"
+      }
+    ],
+    "PER": [
+      {
+        "word": "Jo",
+        "score": "0.41169643"
+      }
+    ]
+  }
+}
