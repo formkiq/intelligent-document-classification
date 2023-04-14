@@ -184,7 +184,7 @@ export const SearchPage = ({ title, icon }) => {
                   <TableCell>
                   {
                     row.tags && Object.entries(row.tags).map(([key, values]) => (  
-                      <p>{key} : {values.join(", ")}</p>
+                      <p key={key}>{key} : {values.join("! ")}</p>
                     ))
                   }
                   </TableCell>
