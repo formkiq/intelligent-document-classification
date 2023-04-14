@@ -13,6 +13,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
@@ -67,6 +68,7 @@ public class DocumentTaggerConsumer {
 		if (MediaType.APPLICATION_PDF_TYPE.equals(contentType)) {
 
 			String pdfFilename = document.getFileLocation();
+
 			path = Path.of(storageDirectory, documentId, "image.png");
 
 			try {
@@ -79,6 +81,8 @@ public class DocumentTaggerConsumer {
 
 			} catch (IOException e) {
 				e.printStackTrace();
+			} finally {
+				Files.deleteIfExists(path);
 			}
 		}
 
