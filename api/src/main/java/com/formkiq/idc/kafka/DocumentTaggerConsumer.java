@@ -129,10 +129,10 @@ public class DocumentTaggerConsumer {
 							.get("namedEntity");
 
 					for (Map.Entry<String, List<Map<String, String>>> e : entities.entrySet()) {
-						List<String> values = e.getValue().stream().filter(m -> {
+						Collection<String> values = e.getValue().stream().filter(m -> {
 							float score = Float.valueOf(m.get("score")).floatValue();
 							return score >= ENTITY_MIN_SCORE;
-						}).map(m -> m.get("word")).collect(Collectors.toList());
+						}).map(m -> m.get("word")).collect(Collectors.toSet());
 
 						if (!values.isEmpty()) {
 							tags.put(e.getKey().toLowerCase(), values);
