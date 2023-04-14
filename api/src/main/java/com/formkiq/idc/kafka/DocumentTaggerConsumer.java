@@ -46,6 +46,7 @@ import jakarta.inject.Inject;
 public class DocumentTaggerConsumer {
 
 	private static final double ENTITY_MIN_SCORE = 0.90;
+	private static final double CATEGORY_MIN_SCORE = 0.60;
 
 	@Value("${api.ml.url}")
 	private String apiMlUrl;
@@ -112,7 +113,14 @@ public class DocumentTaggerConsumer {
 				}
 
 				if (map.containsKey("category")) {
-					tags.put("category", Set.of(map.get("category").toString()));
+					Map<String, String> category = (Map<String, String>) map.get("category");
+					float score = Float.valueOf(category.get("score")).floatValue();
+
+					if (score >= CATEGORY_MIN_SCORE) {
+						tags.put("category", Set.of(category.get("label").toString()));
+					} else {
+						tags.put("category", Set.of("uncategorized"));
+					}
 				}
 
 				if (map.containsKey("namedEntity")) {

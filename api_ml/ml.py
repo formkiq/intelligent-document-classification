@@ -11,8 +11,7 @@ titleModel = AutoModelForSeq2SeqLM.from_pretrained("snrspeaks/t5-one-line-summar
 tokenizer = AutoTokenizer.from_pretrained("dslim/bert-large-NER")
 nerModel = AutoModelForTokenClassification.from_pretrained("dslim/bert-large-NER")
 
-processor = AutoImageProcessor.from_pretrained("microsoft/dit-base-finetuned-rvlcdip")
-imageModel = AutoModelForImageClassification.from_pretrained("microsoft/dit-base-finetuned-rvlcdip")
+vision_classifier = pipeline(model="microsoft/dit-base-finetuned-rvlcdip")
 
 def load_ocr_file(documentId):
     directory = os.environ.get('STORAGE_DIRECTORY', '/app/data')
@@ -88,16 +87,11 @@ def image_classification(path):
     if image.mode != "RGB":
         image = image.convert("RGB")
 
-    inputs = processor(images=image, return_tensors="pt")
-    outputs = imageModel(**inputs)
-    logits = outputs.logits
-
-    # model predicts one of the 16 RVL-CDIP classes
-    predicted_class_idx = logits.argmax(-1).item()
-    return imageModel.config.id2label[predicted_class_idx]
+    result = vision_classifier(images=image)[0]
+    return {"score": str(result["score"]), "label": result["label"]}
     
   except Exception as e:
-    return "unknown"
+    return {"score": "1.0", "label": "uncategorized"}
 
 def generate_title(text):
 

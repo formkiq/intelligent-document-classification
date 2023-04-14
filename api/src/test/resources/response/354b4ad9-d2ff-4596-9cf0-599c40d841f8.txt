@@ -1,5 +1,5 @@
 {
-  "category": "invoice",
+  "category": {"score": "0.8915691375732422", "label": "invoice"},
   "namedEntity": {
     "ORG": [
       {
