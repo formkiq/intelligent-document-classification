@@ -102,7 +102,8 @@ public class DocumentTaggerConsumer {
 
 		HttpClient client = HttpClient.newHttpClient();
 		HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
-
+		System.out.println("tags api response: " + response.body());
+		
 		Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 		Document document = new Document();
 
