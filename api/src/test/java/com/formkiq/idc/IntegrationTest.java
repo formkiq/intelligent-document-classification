@@ -294,6 +294,11 @@ class IntegrationTest extends AbstractTest {
 		list = elasticService.search(INDEX, null, Map.of("loc", "Chicago"));
 		assertEquals(0, list.size());
 
+		SearchRequest req = new SearchRequest();
+		req.setText(" [category] = invoice ");
+		List<Map<String, Object>> search = searchResults(req);
+		assertEquals(1, search.size());
+
 		Path path = Path.of(storageDirectory, documentId, resourceName);
 		assertTrue(path.toFile().exists());
 

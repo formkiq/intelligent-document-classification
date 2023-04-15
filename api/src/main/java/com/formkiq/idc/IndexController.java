@@ -9,8 +9,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import com.formkiq.idc.elasticsearch.Document;
 import com.formkiq.idc.elasticsearch.ElasticsearchService;
@@ -39,6 +42,9 @@ import jakarta.inject.Inject;
 @Secured(SecurityRule.IS_AUTHENTICATED)
 public class IndexController {
 
+	private final static Pattern tagTextPattern = Pattern.compile("^\\[[a-zA-Z0-9_]+\\][\\s]*=.*$");
+	private final static Pattern tagTextSplit = Pattern.compile("\\s*=\\s*");
+	
 	@Inject
 	private ElasticsearchService elasticService;
 
@@ -85,15 +91,39 @@ public class IndexController {
 	public HttpResponse<SearchResponse> search(@Body SearchRequest request) {
 
 		try {
-			List<Document> documents = elasticService.search("documents", request.getText(), request.getTags());
+			List<Document> documents = searchElastic(request);
 			documents.forEach(doc -> doc.setContent(null));
+			
 			SearchResponse response = new SearchResponse();
 			response.setDocuments(documents);
+			
 			return HttpResponse.ok(response);
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 			return HttpResponse.badRequest();
 		}
+	}
+
+	private List<Document> searchElastic(SearchRequest request) throws IOException {
+		
+		Map<String, String> tags = new HashMap<>();
+		String text = request.getText() != null ? request.getText().trim() : null;
+		
+		if (text != null && tagTextPattern.matcher(text).matches()) {
+			
+			String[] strs = tagTextSplit.split(text);
+			if (strs.length == 2) {
+				String key = strs[0].substring(1, strs[0].length() - 1);
+				String value = strs[1];
+				
+				tags.put(key, value);
+				text = null;
+			}
+		}
+		
+		List<Document> documents = elasticService.search("documents", text, tags);
+		return documents;
 	}
 
 	@Post("/upload")
