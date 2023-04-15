@@ -11,12 +11,14 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import IconButton from "@mui/material/IconButton";
 import SearchIcon from "@mui/icons-material/Search";
-import DeleteIcon from '@mui/icons-material/DeleteOutlined';
+import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
+import StyleIcon from '@mui/icons-material/Style';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from "../hooks/useAuth";
 import { DataGrid, GridColDef, GridValueGetterParams, GridActionsCellItem } from '@mui/x-data-grid';
 import moment from 'moment'
+import { display } from '@mui/system';
 
 export const SearchPage = ({ title, icon }) => {
   
@@ -24,6 +26,9 @@ export const SearchPage = ({ title, icon }) => {
   const user = JSON.parse(window.localStorage.getItem("user"));
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [documentId, setDocumentId] = useState("");
+  const [displayTags, setDisplayTags] = useState("none");
 
   const columns: GridColDef[] = [
     { field: 'filename', headerName: 'Filename', flex: 0.5 },
@@ -47,7 +52,7 @@ export const SearchPage = ({ title, icon }) => {
     {
       field: 'status',
       headerName: 'Status',
-      width: 100,
+      width: 140,
     },
     {
       field: 'actions',
@@ -57,8 +62,15 @@ export const SearchPage = ({ title, icon }) => {
       cellClassName: 'actions',
       getActions: ({ id }) => {
         const found = results.find(element => element.documentId === id);
-        if (found && found.status === "COMPLETE") {
+        if (found) {
           return [
+          <GridActionsCellItem
+            icon={<StyleIcon />}
+            label="Tags"
+            className="textPrimary"
+            onClick={(event) => showTags(id)}
+            color="inherit"
+          />,
           <GridActionsCellItem
             icon={<DownloadIcon />}
             label="Download"
@@ -76,6 +88,28 @@ export const SearchPage = ({ title, icon }) => {
         }
 
         return [];
+      },
+    },
+  ];
+
+  const tagColumns: GridColDef[] = [
+    { field: 'key', headerName: 'Key', flex: 1 },
+    { field: 'value', headerName: 'Value', flex: 1 },
+    {
+      field: 'actions',
+      type: 'actions',
+      headerName: 'Actions',
+      width: 135,
+      cellClassName: 'actions',
+      getActions: ({ id }) => {
+          return [
+          <GridActionsCellItem
+            icon={<DeleteIcon />}
+            label="Delete Tag"
+            onClick={(event) => deleteDocumentTag(id)}
+            color="inherit"
+          />,
+        ]
       },
     },
   ];
@@ -118,6 +152,8 @@ export const SearchPage = ({ title, icon }) => {
       .then(data => {
         if (data && data.documents) {
           setResults(data.documents);
+          setTags([]);
+          setDisplayTags("none");
         }
       })
       .catch(error => {
@@ -132,6 +168,25 @@ export const SearchPage = ({ title, icon }) => {
       search(event.target.value);
     }
   };
+
+  function showTags(documentId) {
+    var tags = [];
+    const found = results.find(element => element.documentId === documentId);
+    if (found) {
+      setDocumentId(documentId);
+      setDisplayTags("block");
+      var id = 0;
+      for (let key of Object.keys(found.tags)) {
+        let values = found.tags[key];
+        values.forEach(value => {
+          tags.push({id:id, key:key, value:value});
+          id = id+1;
+        });
+      }
+    }
+
+    setTags(tags);
+  }
 
   function downloadDocument(documentId) {
     
@@ -159,6 +214,36 @@ export const SearchPage = ({ title, icon }) => {
       });
     }
   };
+
+  function deleteDocumentTag(id) {
+
+    const found = tags.find(element => element.id === id);
+    if (user && user.access_token && found) {
+      fetch('/api/documents/' + documentId + '/tags/' + found.key + '/' + found.value, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + user.access_token,
+        }
+      })
+      .then(response => {
+
+        if (response.ok) {
+
+          setTags((prevResults) =>
+            prevResults.filter((row, index) => row.id !== id)
+          );
+
+        } else if (response.status === 401) {
+          logout();
+        }
+        return "";
+      })
+      .catch(error => {
+        console.log(error);
+      });
+    }
+  }
 
   function deleteDocument(documentId) {
     
@@ -207,7 +292,7 @@ export const SearchPage = ({ title, icon }) => {
           {title}
         </Typography>
 
-         <TextField
+        <TextField
         id="search"
         type="search"
         label="Search"
@@ -222,18 +307,41 @@ export const SearchPage = ({ title, icon }) => {
             </InputAdornment>
           ),
         }}
-      />
+        />
+        <Typography component="small">
+          search by text or tag using "[tagKey]=tagValue"
+        </Typography>
         <React.Fragment>
-          <Box sx={{ height: 400, width: '100%', marginTop: 5 }}>
+          <Box sx={{ width: '100%', marginTop: 5 }}>
+            <h2>Document(s)</h2>
             <DataGrid
               sx={{
                 '&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell': { py: '8px' },
                 '&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell': { py: '15px' },
                 '&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell': { py: '22px' },
               }}
-
               rows={results}
               columns={columns}
+              autoHeight
+              initialState={{
+                pagination: {
+                  paginationModel: {
+                    pageSize: 10,
+                  },
+                },
+              }}
+              pageSizeOptions={[10]}
+              disableRowSelectionOnClick
+              getRowId={(data) => data.documentId}
+              getRowHeight={() => 'auto'}
+            />
+          </Box>
+
+          <Box sx={{ width: '100%', marginTop: 5, display: displayTags }}>
+            <h2>Document Tag(s)</h2>
+            <DataGrid
+              rows={tags}
+              columns={tagColumns}
               autoHeight
               initialState={{
                 pagination: {
@@ -244,8 +352,6 @@ export const SearchPage = ({ title, icon }) => {
               }}
               pageSizeOptions={[5]}
               disableRowSelectionOnClick
-              getRowId={(data) => data.documentId}
-              getRowHeight={() => 'auto'}
             />
 
           </Box>
