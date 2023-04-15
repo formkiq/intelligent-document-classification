@@ -7,12 +7,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -48,8 +46,8 @@ import jakarta.inject.Inject;
 @KafkaListener(offsetReset = OffsetReset.EARLIEST)
 public class DocumentTaggerConsumer {
 
-	private static final double ENTITY_MIN_SCORE = 0.90;
 	private static final double CATEGORY_MIN_SCORE = 0.60;
+	private static final double ENTITY_MIN_SCORE = 0.90;
 
 	@Value("${api.ml.url}")
 	private String apiMlUrl;
@@ -60,50 +58,36 @@ public class DocumentTaggerConsumer {
 	@Value("${storage.directory}")
 	private String storageDirectory;
 
-	private String formatConverter(String documentId) throws IOException {
+	private Path createPngImage(String key, Document document) {
+		Path path;
+		String pdfFilename = document.getFileLocation();
 
-		Document document = elasticService.getDocumentWithoutContent(INDEX, documentId);
-		Path path = Path.of(document.getFileLocation());
+		path = Path.of(storageDirectory, key, "image.png");
 
-		MediaType contentType = MediaType.of(document.getContentType());
+		try {
 
-		if (MediaType.APPLICATION_PDF_TYPE.equals(contentType)) {
-
-			String pdfFilename = document.getFileLocation();
-
-			path = Path.of(storageDirectory, documentId, "image.png");
-
-			try {
-
-				try (PDDocument pdDocument = PDDocument.load(new File(pdfFilename))) {
-					PDFRenderer pdfRenderer = new PDFRenderer(pdDocument);
-					BufferedImage bim = pdfRenderer.renderImageWithDPI(0, 300, ImageType.RGB);
-					ImageIOUtil.writeImage(bim, path.toString(), 300);
-				}
-
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				Files.deleteIfExists(path);
+			try (PDDocument pdDocument = PDDocument.load(new File(pdfFilename))) {
+				PDFRenderer pdfRenderer = new PDFRenderer(pdDocument);
+				BufferedImage bim = pdfRenderer.renderImageWithDPI(0, 300, ImageType.RGB);
+				ImageIOUtil.writeImage(bim, path.toString(), 300);
 			}
-		}
 
-		return path.toString();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return path;
 	}
 
 	@SuppressWarnings("unchecked")
-	@Topic("document_tagging")
-	public void receive(String key) throws IOException, URISyntaxException, InterruptedException {
-
-		String path = URLEncoder.encode(formatConverter(key), StandardCharsets.UTF_8);
-
+	private void fetchTagsAndUpdateDocument(String key, Path path)
+			throws URISyntaxException, IOException, InterruptedException {
 		HttpRequest request = HttpRequest.newBuilder().uri(new URI(apiMlUrl + "?documentId=" + key + "&path=" + path))
 				.timeout(Duration.ofMinutes(2)).GET().build();
 
 		HttpClient client = HttpClient.newHttpClient();
 		HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
 		System.out.println("tags api response: " + response.body());
-		
+
 		Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 		Document document = new Document();
 
@@ -164,5 +148,27 @@ public class DocumentTaggerConsumer {
 		}
 
 		elasticService.updateDocument(INDEX, key, document);
+	}
+
+	@Topic("document_tagging")
+	public void receive(String key) throws IOException, URISyntaxException, InterruptedException {
+
+		boolean deletePath = false;
+		Document document = elasticService.getDocumentWithoutContent(INDEX, key);
+		Path path = Path.of(document.getFileLocation());
+
+		MediaType contentType = MediaType.of(document.getContentType());
+		if (MediaType.APPLICATION_PDF_TYPE.equals(contentType)) {
+			path = createPngImage(key, document);
+			deletePath = true;
+		}
+
+		try {
+			fetchTagsAndUpdateDocument(key, path);
+		} finally {
+			if (deletePath) {
+				Files.delete(path);
+			}
+		}
 	}
 }
