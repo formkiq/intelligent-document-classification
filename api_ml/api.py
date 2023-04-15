@@ -19,11 +19,11 @@ def index():
         category = image_classification(path)
         
         result = jsonify({'namedEntity': ner_results, 'category': category, 'title': title})
-        print(result)
+        print(result, flush=True)
         return result
     else:
         result = jsonify({'error': 'Please provide an "documentId" in the request parameter'}), 404
-        print(result)
+        print(result, flush=True)
         return result
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ vision_classifier = pipeline(model="microsoft/dit-base-finetuned-rvlcdip")
 def load_ocr_file(documentId):
     directory = os.environ.get('STORAGE_DIRECTORY', '/app/data')
     filename = os.path.join(directory, f"{documentId}/ocr.txt")
-    print(f"loading file: {filename}")
+    print(f"loading file: {filename}", flush=True)
     if os.path.isfile(filename):
         with open(filename, 'r') as f:
             data = f.read()
@@ -91,7 +91,7 @@ def image_classification(path):
     return {"score": str(result["score"]), "label": result["label"]}
     
   except Exception as e:
-    print(e)
+    print("Exception occurred:", e, flush=True)
     return {"score": "1.0", "label": "uncategorized"}
 
 def generate_title(text):
