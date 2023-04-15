@@ -123,6 +123,11 @@ class IntegrationTest extends AbstractTest {
 		return file;
 	}
 
+	private void deleteTag(String documentId, String tagKey, String tagValue) throws IOException {
+		HttpResponse<?> response = indexController.deleteTagKeyValue(documentId, tagKey, tagValue);
+		assertEquals(OK, response.getStatus());
+	}
+
 	private HttpResponse<String> search(SearchRequest search) {
 		String accessToken = getAccessToken();
 		HttpRequest<?> requestWithAuthorization = HttpRequest.POST("/search", search).accept(APPLICATION_JSON_TYPE)
@@ -304,6 +309,14 @@ class IntegrationTest extends AbstractTest {
 
 		path = Path.of(storageDirectory, documentId, "ocr.txt");
 		assertTrue(path.toFile().exists());
+
+		deleteTag(documentId, "loc", "New York");
+		
+		list = elasticService.search(INDEX, null, Map.of("category", "invoice"));
+		assertEquals(1, list.size());
+		
+		list = elasticService.search(INDEX, null, Map.of("loc", "New York"));
+		assertEquals(0, list.size());
 	}
 
 	@Test

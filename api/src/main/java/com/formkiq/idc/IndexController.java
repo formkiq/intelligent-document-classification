@@ -44,7 +44,7 @@ public class IndexController {
 
 	private final static Pattern tagTextPattern = Pattern.compile("^\\[[a-zA-Z0-9_]+\\][\\s]*=.*$");
 	private final static Pattern tagTextSplit = Pattern.compile("\\s*=\\s*");
-	
+
 	@Inject
 	private ElasticsearchService elasticService;
 
@@ -54,6 +54,14 @@ public class IndexController {
 	@Value("${storage.directory}")
 	private String storageDirectory;
 
+	@Delete("/documents/{documentId}/tags/{tagKey}/{tagValue}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public HttpResponse<?> deleteTagKeyValue(@PathVariable String documentId, @PathVariable String tagKey,
+			@PathVariable String tagValue) throws IOException {
+		return this.elasticService.deleteDocumentTag(INDEX, documentId, tagKey, tagValue) ? HttpResponse.ok()
+				: HttpResponse.notFound();
+	}
+	
 	@Delete("/documents/{documentId}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public HttpResponse<?> deleteDocument(@PathVariable String documentId) throws IOException {
@@ -93,12 +101,12 @@ public class IndexController {
 		try {
 			List<Document> documents = searchElastic(request);
 			documents.forEach(doc -> doc.setContent(null));
-			
+
 			SearchResponse response = new SearchResponse();
 			response.setDocuments(documents);
-			
+
 			return HttpResponse.ok(response);
-			
+
 		} catch (IOException e) {
 			e.printStackTrace();
 			return HttpResponse.badRequest();
@@ -106,22 +114,22 @@ public class IndexController {
 	}
 
 	private List<Document> searchElastic(SearchRequest request) throws IOException {
-		
+
 		Map<String, String> tags = new HashMap<>();
 		String text = request.getText() != null ? request.getText().trim() : null;
-		
+
 		if (text != null && tagTextPattern.matcher(text).matches()) {
-			
+
 			String[] strs = tagTextSplit.split(text);
 			if (strs.length == 2) {
 				String key = strs[0].substring(1, strs[0].length() - 1);
 				String value = strs[1];
-				
+
 				tags.put(key, value);
 				text = null;
 			}
 		}
-		
+
 		List<Document> documents = elasticService.search("documents", text, tags);
 		return documents;
 	}
@@ -150,7 +158,7 @@ public class IndexController {
 		document.setContentType(mediaType.getName());
 		document.setFileLocation(filePath.toString());
 		document.setFilename(file.getFilename());
-		
+
 		this.elasticService.addDocument(INDEX, documentId, document);
 
 		producer.sendTesseractRequest(documentId, filePath.toString());

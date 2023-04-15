@@ -17,6 +17,7 @@ import org.elasticsearch.client.RestClient;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -57,10 +58,27 @@ public class ElasticsearchService {
 		IndexResponse response = getClient().index(i -> i.index(index).id(id).document(document));
 		return response.result() == Result.Created;
 	}
-	
+
 	public boolean deleteDocument(String index, String id) throws ElasticsearchException, IOException {
-		DeleteResponse response = getClient().delete(DeleteRequest.of(i->i.index(index).id(id)));
+		DeleteResponse response = getClient()
+				.delete(DeleteRequest.of(i -> i.index(index).id(id).refresh(Refresh.True)));
 		return response.result() == Result.Deleted;
+	}
+
+	public boolean deleteDocumentTag(String index, String documentId, String tagKey, String tagValue)
+			throws IOException {
+
+		boolean deleted = false;
+
+		Document document = getDocumentWithoutContent(index, documentId);
+
+		if (document.getTags().containsKey(tagKey)) {
+			deleted = document.getTags().get(tagKey).remove(tagValue);
+			getClient().update(UpdateRequest.of(i -> i.index(index).id(documentId).doc(document).refresh(Refresh.True)),
+					Map.class);
+		}
+
+		return deleted;
 	}
 
 	private ElasticsearchClient getClient() throws IOException {
@@ -102,7 +120,7 @@ public class ElasticsearchService {
 		try {
 
 			GetRequest request = GetRequest.of(i -> i.index(indexName).id(documentId)
-					.sourceIncludes(Arrays.asList("contentType", "fileLocation")));
+					.sourceIncludes(Arrays.asList("contentType", "fileLocation", "tags")));
 			Document document = getClient().get(request, Document.class).source();
 
 			return document;
@@ -112,27 +130,6 @@ public class ElasticsearchService {
 			return null;
 		}
 	}
-
-//	public List<Document> search(String index, String searchText) throws IOException {
-//
-//		List<Document> list = Collections.emptyList();
-//
-//		SearchRequest searchRequest = SearchRequest
-//				.of(i -> i.index(index).query(q -> q.match(mq -> mq.field("content").query(searchText))));
-//
-//		try {
-//			SearchResponse<Document> searchResponse = getClient().search(searchRequest, Document.class);
-//
-//			List<Hit<Document>> hits = searchResponse.hits().hits();
-//			list = hits.stream().map(m -> m.source()).collect(Collectors.toList());
-//		} catch (ElasticsearchException e) {
-//			if (!e.getMessage().contains("index_not_found_exception")) {
-//				throw e;
-//			}
-//		}
-//
-//		return list;
-//	}
 
 	public List<Document> search(String index, String searchText, Map<String, String> tags) throws IOException {
 
@@ -188,39 +185,10 @@ public class ElasticsearchService {
 		}
 	}
 
-//	public List<Document> searchTags(String index, Map<String, String> keyValueMap) throws IOException {
-//
-//		SearchResponse<Document> searchResponse = getClient().search(s -> {
-//			return s.index(index).query(q -> {
-//
-//				BoolQuery bq = BoolQuery.of(qq -> {
-//
-//					List<Query> tagQueries = new ArrayList<>();
-//
-//					for (Map.Entry<String, String> entry : keyValueMap.entrySet()) {
-//						String key = entry.getKey();
-//						String value = entry.getValue();
-//
-//						Query tagQuery = Query.of(tq -> tq.match(mq -> mq.field("tags." + key).query(value)));
-//						tagQueries.add(tagQuery);
-//					}
-//
-//					return qq.must(tagQueries);
-//				});
-//
-//				return q.bool(bq);
-//			});
-//		}, Document.class);
-//
-//		List<Hit<Document>> hits = searchResponse.hits().hits();
-//		List<Document> list = hits.stream().map(m -> m.source()).collect(Collectors.toList());
-//
-//		return list;
-//	}
-
 	@SuppressWarnings("rawtypes")
 	public UpdateResponse<Map> updateDocument(String index, String id, Document document) throws IOException {
-		return getClient().update(UpdateRequest.of(i -> i.index(index).id(id).doc(document)), Map.class);
+		return getClient().update(UpdateRequest.of(i -> i.index(index).id(id).doc(document).refresh(Refresh.True)),
+				Map.class);
 	}
 
 }
