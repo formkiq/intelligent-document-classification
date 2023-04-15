@@ -7,10 +7,12 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -81,8 +83,11 @@ public class DocumentTaggerConsumer {
 	@SuppressWarnings("unchecked")
 	private void fetchTagsAndUpdateDocument(String key, Path path)
 			throws URISyntaxException, IOException, InterruptedException {
-		HttpRequest request = HttpRequest.newBuilder().uri(new URI(apiMlUrl + "?documentId=" + key + "&path=" + path))
-				.timeout(Duration.ofMinutes(2)).GET().build();
+
+		String urlEncode = URLEncoder.encode(path.toString(), StandardCharsets.UTF_8);
+		HttpRequest request = HttpRequest.newBuilder()
+				.uri(new URI(apiMlUrl + "?documentId=" + key + "&path=" + urlEncode)).timeout(Duration.ofMinutes(2))
+				.GET().build();
 
 		HttpClient client = HttpClient.newHttpClient();
 		HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
