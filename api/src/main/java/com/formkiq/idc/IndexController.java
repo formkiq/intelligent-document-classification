@@ -20,6 +20,7 @@ import com.formkiq.idc.elasticsearch.ElasticsearchService;
 import com.formkiq.idc.elasticsearch.Status;
 import com.formkiq.idc.kafka.TesseractProducer;
 
+import co.elastic.clients.elasticsearch._types.Result;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
@@ -29,6 +30,7 @@ import io.micronaut.http.annotation.Consumes;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Patch;
 import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
@@ -61,7 +63,7 @@ public class IndexController {
 		return this.elasticService.deleteDocumentTag(INDEX, documentId, tagKey, tagValue) ? HttpResponse.ok()
 				: HttpResponse.notFound();
 	}
-	
+
 	@Delete("/documents/{documentId}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public HttpResponse<?> deleteDocument(@PathVariable String documentId) throws IOException {
@@ -93,6 +95,27 @@ public class IndexController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Document getDocument(@PathVariable String documentId) throws IOException {
 		return this.elasticService.getDocument(INDEX, documentId);
+	}
+
+	@Patch(value = "/documents/{documentId}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+	public HttpResponse<Void> updateDocument(@PathVariable String documentId, @Body Map<String, String> attributes) {
+
+		try {
+			Document doc = new Document();
+			if (attributes.containsKey("title")) {
+				doc.setTitle(attributes.get("title"));
+			}
+			
+			if (elasticService.updateDocument(INDEX, documentId, doc).result() == Result.Updated) {
+				return HttpResponse.ok();
+			}
+
+			return HttpResponse.badRequest();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			return HttpResponse.badRequest();
+		}
 	}
 
 	@Post(value = "/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)

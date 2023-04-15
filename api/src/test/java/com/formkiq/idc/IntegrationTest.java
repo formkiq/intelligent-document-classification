@@ -96,6 +96,11 @@ class IntegrationTest extends AbstractTest {
 		return response;
 	}
 
+	private void deleteTag(String documentId, String tagKey, String tagValue) throws IOException {
+		HttpResponse<?> response = indexController.deleteTagKeyValue(documentId, tagKey, tagValue);
+		assertEquals(OK, response.getStatus());
+	}
+
 	private HttpResponse<StreamedFile> download(String documentId) throws IOException {
 		return indexController.download(documentId);
 	}
@@ -121,11 +126,6 @@ class IntegrationTest extends AbstractTest {
 		File file = new File(classLoader.getResource(resourceName).getFile());
 		assertTrue(file.exists());
 		return file;
-	}
-
-	private void deleteTag(String documentId, String tagKey, String tagValue) throws IOException {
-		HttpResponse<?> response = indexController.deleteTagKeyValue(documentId, tagKey, tagValue);
-		assertEquals(OK, response.getStatus());
 	}
 
 	private HttpResponse<String> search(SearchRequest search) {
@@ -311,10 +311,10 @@ class IntegrationTest extends AbstractTest {
 		assertTrue(path.toFile().exists());
 
 		deleteTag(documentId, "loc", "New York");
-		
+
 		list = elasticService.search(INDEX, null, Map.of("category", "invoice"));
 		assertEquals(1, list.size());
-		
+
 		list = elasticService.search(INDEX, null, Map.of("loc", "New York"));
 		assertEquals(0, list.size());
 	}
@@ -338,6 +338,7 @@ class IntegrationTest extends AbstractTest {
 
 		assertEquals(documentId, data.getDocumentId());
 		assertNotNull(data.getInsertedDate());
+		assertEquals("This is a sample category", data.getTitle());
 		assertEquals("COMPLETE", data.getStatus());
 		assertEquals("text/plain", data.getContentType());
 		assertNotNull(data.getFileLocation());
@@ -364,6 +365,16 @@ class IntegrationTest extends AbstractTest {
 		InputStream inputStream = download.body().getInputStream();
 		String text = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 		assertEquals("This is a test document!", text);
+
+		String title = "this is new title";
+		updateDocument(documentId, Map.of("title", title));
+		assertEquals(title, elasticService.getDocument(INDEX, documentId).getTitle());
+	}
+
+	private HttpResponse<Void> updateDocument(String documentId, Map<String, String> data) {
+		HttpResponse<Void> response = indexController.updateDocument(documentId, data);
+		assertEquals(OK, response.getStatus());
+		return response;
 	}
 
 	private String upload(String resourceName, MediaType mediaType) throws IOException {

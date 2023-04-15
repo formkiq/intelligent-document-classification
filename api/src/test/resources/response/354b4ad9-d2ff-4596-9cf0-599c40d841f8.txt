@@ -1,4 +1,5 @@
 {
+  "title": "This is a sample category",
   "category": {"score": "0.8915691375732422", "label": "invoice"},
   "namedEntity": {
     "ORG": [
