@@ -91,6 +91,7 @@ def image_classification(path):
     return {"score": str(result["score"]), "label": result["label"]}
     
   except Exception as e:
+    print(e)
     return {"score": "1.0", "label": "uncategorized"}
 
 def generate_title(text):

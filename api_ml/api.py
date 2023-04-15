@@ -18,9 +18,13 @@ def index():
         path = urllib.parse.unquote(path)
         category = image_classification(path)
         
-        return jsonify({'namedEntity': ner_results, 'category': category, 'title': title})
+        result = jsonify({'namedEntity': ner_results, 'category': category, 'title': title})
+        print(result)
+        return result
     else:
-        return jsonify({'error': 'Please provide an "documentId" in the request parameter'}), 404
+        result = jsonify({'error': 'Please provide an "documentId" in the request parameter'}), 404
+        print(result)
+        return result
 
 if __name__ == "__main__":
     from waitress import serve
