@@ -9,17 +9,76 @@ import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import IconButton from "@mui/material/IconButton";
 import SearchIcon from "@mui/icons-material/Search";
+import DeleteIcon from '@mui/icons-material/DeleteOutlined';
+import DownloadIcon from '@mui/icons-material/Download';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from "../hooks/useAuth";
+import { DataGrid, GridColDef, GridValueGetterParams, GridActionsCellItem } from '@mui/x-data-grid';
+import moment from 'moment'
 
 export const SearchPage = ({ title, icon }) => {
   
   const { logout } = useAuth();
-  const [loading, setLoading] = useState(false);
   const user = JSON.parse(window.localStorage.getItem("user"));
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
+
+  const columns: GridColDef[] = [
+    { field: 'filename', headerName: 'Filename', flex: 0.5 },
+    {
+      field: 'title',
+      headerName: 'Title',
+      flex: 1
+    },
+    {
+      field: 'contentType',
+      headerName: 'Content-Type',
+      width: 150,
+    },
+    {
+      field: 'insertedDate',
+      headerName: 'Inserted Date',
+      width: 200,
+      valueGetter: (params: GridValueGetterParams) =>
+      `${formatDateString(params.row.insertedDate) || ''}`,
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 100,
+    },
+    {
+      field: 'actions',
+      type: 'actions',
+      headerName: 'Actions',
+      width: 135,
+      cellClassName: 'actions',
+      getActions: ({ id }) => {
+        const found = results.find(element => element.documentId === id);
+        if (found && found.status === "COMPLETE") {
+          return [
+          <GridActionsCellItem
+            icon={<DownloadIcon />}
+            label="Download"
+            className="textPrimary"
+            onClick={(event) => downloadDocument(id)}
+            color="inherit"
+          />,
+          <GridActionsCellItem
+            icon={<DeleteIcon />}
+            label="Delete"
+            onClick={(event) => deleteDocument(id)}
+            color="inherit"
+          />,
+          ]
+        }
+
+        return [];
+      },
+    },
+  ];
 
   useEffect(() => {
     search("");
@@ -28,6 +87,10 @@ export const SearchPage = ({ title, icon }) => {
   const handleChange = (event) => {
     setSearchTerm(event.target.value);
   };
+
+  function formatDateString(dateString) {
+    return moment(dateString).format('MMM D, YYYY hh:mm:ss a')
+  }
 
   function search(text) {
 
@@ -84,19 +147,20 @@ export const SearchPage = ({ title, icon }) => {
       .then(data => {
         var a = document.createElement("a");
         a.href = window.URL.createObjectURL(data);
-        //a.download = "FILENAME";
+
+        const found = results.find(element => element.documentId === documentId);
+        if (found) {
+          a.download = found.filename;
+        }
         a.click();
       })
       .catch(error => {
         console.log(error);
       });
     }
-
-    setLoading(false);
   };
 
   function deleteDocument(documentId) {
-    setLoading(true);
     
     if (user && user.access_token && documentId) {
       fetch('/api/documents/' + documentId, {
@@ -125,8 +189,6 @@ export const SearchPage = ({ title, icon }) => {
         console.log(error);
       });
     }
-
-    setLoading(false);
   };
 
   return (
@@ -162,43 +224,31 @@ export const SearchPage = ({ title, icon }) => {
         }}
       />
         <React.Fragment>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Id</TableCell>
-                <TableCell>Title</TableCell>
-                <TableCell>Content Type</TableCell>
-                <TableCell>Inserted Date</TableCell>
-                <TableCell>Tag(s)</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {results.map((row) => (
-                <TableRow key={row.documentId}>
-                  <TableCell>{row.documentId}</TableCell>
-                  <TableCell>{row.title}</TableCell>
-                  <TableCell>{row.contentType}</TableCell>
-                  <TableCell>{row.insertedDate}</TableCell>
-                  <TableCell>
-                  {
-                    row.tags && Object.entries(row.tags).map(([key, values]) => (  
-                      <p key={key}>{key} : {values.join("! ")}</p>
-                    ))
-                  }
-                  </TableCell>
-                  <TableCell>{row.status}</TableCell>
-                  <TableCell align="right">
-                    <ButtonGroup variant="contained" aria-label="outlined primary button group">
-                      <Button onClick={(event) => downloadDocument(row.documentId)}>Download</Button>
-                      <Button variant="outlined" onClick={(event) => deleteDocument(row.documentId)}>{ loading ? "Deleting" : "Delete"}</Button>
-                    </ButtonGroup>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Box sx={{ height: 400, width: '100%', marginTop: 5 }}>
+            <DataGrid
+              sx={{
+                '&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell': { py: '8px' },
+                '&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell': { py: '15px' },
+                '&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell': { py: '22px' },
+              }}
+
+              rows={results}
+              columns={columns}
+              autoHeight
+              initialState={{
+                pagination: {
+                  paginationModel: {
+                    pageSize: 5,
+                  },
+                },
+              }}
+              pageSizeOptions={[5]}
+              disableRowSelectionOnClick
+              getRowId={(data) => data.documentId}
+              getRowHeight={() => 'auto'}
+            />
+
+          </Box>
         </React.Fragment>
       </Box>
     </Container>
