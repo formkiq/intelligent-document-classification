@@ -30,12 +30,49 @@ export const SearchPage = ({ title, icon }) => {
   const [documentId, setDocumentId] = useState("");
   const [displayTags, setDisplayTags] = useState("none");
 
+  const processRowUpdate = React.useCallback(
+    async (newRow: GridRowModel) => {
+
+      if (user && user.access_token) {
+
+        let body = {"title":newRow.title};
+
+        fetch('/api/documents/' + newRow.documentId, {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + user.access_token,
+          }
+        })
+        .then(response => {
+
+          if (response.status === 401) {
+            logout();
+          }
+          return "";
+        })
+        .catch(error => {
+          console.log(error);
+        });
+      }
+
+      return newRow;
+    },
+    [],
+  );
+
+  const handleProcessRowUpdateError = React.useCallback((error: Error) => {
+    console.log("ERROR: " + error);
+  }, []);
+
   const columns: GridColDef[] = [
     { field: 'filename', headerName: 'Filename', flex: 0.5 },
     {
       field: 'title',
       headerName: 'Title',
-      flex: 1
+      flex: 1,
+      editable: true
     },
     {
       field: 'contentType',
@@ -334,6 +371,8 @@ export const SearchPage = ({ title, icon }) => {
               disableRowSelectionOnClick
               getRowId={(data) => data.documentId}
               getRowHeight={() => 'auto'}
+              processRowUpdate={processRowUpdate}
+              onProcessRowUpdateError={handleProcessRowUpdateError}
             />
           </Box>
 
