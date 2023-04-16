@@ -371,7 +371,7 @@ class IntegrationTest extends AbstractTest {
 		assertEquals(title, elasticService.getDocument(INDEX, documentId).getTitle());
 	}
 
-	private HttpResponse<Void> updateDocument(String documentId, Map<String, String> data) {
+	private HttpResponse<Void> updateDocument(String documentId, Map<String, Object> data) {
 		HttpResponse<Void> response = indexController.updateDocument(documentId, data);
 		assertEquals(OK, response.getStatus());
 		return response;

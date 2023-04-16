@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -97,15 +98,22 @@ public class IndexController {
 		return this.elasticService.getDocument(INDEX, documentId);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Patch(value = "/documents/{documentId}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	public HttpResponse<Void> updateDocument(@PathVariable String documentId, @Body Map<String, String> attributes) {
+	public HttpResponse<Void> updateDocument(@PathVariable String documentId, @Body Map<String, Object> attributes) {
 
 		try {
 			Document doc = new Document();
+
 			if (attributes.containsKey("title")) {
-				doc.setTitle(attributes.get("title"));
+				doc.setTitle(attributes.get("title").toString());
 			}
-			
+
+			if (attributes.containsKey("tags")) {
+				Map<String, Collection<String>> tags = (Map<String, Collection<String>>) attributes.get("tags");
+				doc.setTags(tags);
+			}
+
 			if (elasticService.updateDocument(INDEX, documentId, doc).result() == Result.Updated) {
 				return HttpResponse.ok();
 			}
