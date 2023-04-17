@@ -12,8 +12,7 @@ COPY micronaut-cli.yml micronaut-cli.yml
 
 RUN ./gradlew build -x test
 
-
-FROM openjdk:17-alpine
+FROM eclipse-temurin:17.0.6_10-jre-alpine
 
 RUN apk add --no-cache tesseract-ocr
 
