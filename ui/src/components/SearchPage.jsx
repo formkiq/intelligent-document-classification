@@ -11,14 +11,20 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import IconButton from "@mui/material/IconButton";
 import SearchIcon from "@mui/icons-material/Search";
-import DeleteIcon from '@mui/icons-material/Delete';
-import DownloadIcon from '@mui/icons-material/Download';
-import StyleIcon from '@mui/icons-material/Style';
+import DeleteIcon from '@mui/icons-material/DeleteOutlined';
+import DownloadIcon from '@mui/icons-material/DownloadOutlined';
+import StyleIcon from '@mui/icons-material/StyleOutlined';
+import Stack from '@mui/material/Stack';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from "../hooks/useAuth";
 import { DataGrid, GridColDef, GridValueGetterParams, GridActionsCellItem } from '@mui/x-data-grid';
 import moment from 'moment'
 import { display } from '@mui/system';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
 
 export const SearchPage = ({ title, icon }) => {
   
@@ -29,32 +35,70 @@ export const SearchPage = ({ title, icon }) => {
   const [tags, setTags] = useState([]);
   const [documentId, setDocumentId] = useState("");
   const [displayTags, setDisplayTags] = useState("none");
+  const [open, setOpen] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleAddTagSubmit = (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const tagKey = data.get("tagKey");
+    const tagValue = data.get("tagValue");
+    const found = results.find(element => element.documentId === documentId);
+
+    if (!found.tags) {
+      found.tags = [];
+    }
+
+    if (found.tags[tagKey]) {
+      found.tags[tagKey].push(tagValue);
+    } else {
+      found.tags[tagKey] = [tagValue];
+    }
+
+    let body = {"tags":found.tags};
+    updateDocument(documentId, body);
+    showTags(documentId);
+
+    handleClose();
+  };
+
+  function updateDocument(documentId, body) {
+    if (user && user.access_token) {
+
+      fetch('/api/documents/' + documentId, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + user.access_token,
+        }
+      })
+      .then(response => {
+
+        if (response.status === 401) {
+          logout();
+        }
+        return "";
+      })
+      .catch(error => {
+        console.log(error);
+      });
+    }
+  }
 
   const processRowUpdate = React.useCallback(
     async (newRow: GridRowModel) => {
 
       if (user && user.access_token) {
-
         let body = {"title":newRow.title};
-
-        fetch('/api/documents/' + newRow.documentId, {
-          method: 'PATCH',
-          body: JSON.stringify(body),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + user.access_token,
-          }
-        })
-        .then(response => {
-
-          if (response.status === 401) {
-            logout();
-          }
-          return "";
-        })
-        .catch(error => {
-          console.log(error);
-        });
+        updateDocument(newRow.documentId, body);
       }
 
       return newRow;
@@ -165,6 +209,7 @@ export const SearchPage = ({ title, icon }) => {
 
   function search(text) {
 
+    setOpen(false);
     let search = {"text":text};
 
     if (user && user.access_token) {
@@ -188,6 +233,7 @@ export const SearchPage = ({ title, icon }) => {
       })
       .then(data => {
         if (data && data.documents) {
+          console.log("DOCUMENTS: " + JSON.stringify(data.documents));
           setResults(data.documents);
           setTags([]);
           setDisplayTags("none");
@@ -315,6 +361,36 @@ export const SearchPage = ({ title, icon }) => {
 
   return (
     <Container component="main" maxWidth="lg">
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>Add Tag To Document</DialogTitle>
+        <Box component="form" onSubmit={handleAddTagSubmit} noValidate>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="tagKey"
+              name="tagKey"
+              label="Tag Key"
+              type="text"
+              fullWidth
+              variant="standard"
+            />
+            <TextField
+              margin="dense"
+              id="tagValue"
+              name="tagValue"
+              label="Tag Value"
+              type="text"
+              fullWidth
+              variant="standard"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button variant="outlined" onClick={handleClose}>Cancel</Button>
+            <Button variant="outlined" type="submit">Add Tag</Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
       <Box
         sx={{
           marginTop: 8,
@@ -378,6 +454,12 @@ export const SearchPage = ({ title, icon }) => {
 
           <Box sx={{ width: '100%', marginTop: 5, display: displayTags }}>
             <h2>Document Tag(s)</h2>
+            <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+              <Button variant="outlined" onClick={handleClickOpen}>
+                Add a Tag
+              </Button>
+            </Stack>
+
             <DataGrid
               rows={tags}
               columns={tagColumns}
