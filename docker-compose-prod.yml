@@ -68,7 +68,7 @@ services:
       - documents:/app/documents
 
   certbot:
-    image: certbot/certbot
+    image: certbot/certbot:v2.5.0
     restart: unless-stopped
     volumes:
       - /var/www/certbot/:/var/www/certbot/
