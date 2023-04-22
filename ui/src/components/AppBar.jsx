@@ -33,15 +33,8 @@ export const AppBar = ({ pages }) => {
   return (
     <MuiAppBar position="static">
       <Container maxWidth="xl">
-        <Toolbar disableGutters>
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
-            sx={{ mr: 2, display: { xs: "none", md: "flex" } }}
-          >
-            Intelligent Documents
-          </Typography>
+        <Toolbar>
+          <img className="logo" src="/img/FormKiQ Automated Document Classification and Discovery.png" alt="FormKiQ Automated Document Classification and Discovery" />
 
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
             <IconButton
@@ -87,29 +80,23 @@ export const AppBar = ({ pages }) => {
               )}
             </Menu>
           </Box>
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
-            sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}
-          >
-            React Router Auth
-          </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
             {pages?.map((page) => (
               <Button
+                className="navItem"
                 key={page.label}
                 onClick={() => handleCloseNavMenu(page.path)}
-                sx={{ my: 2, color: "white", display: "block" }}
+                sx={{ my: 2, fontWeight: "fontWeightBold", color: "#542701", display: "block" }}
               >
                 {page.label}
               </Button>
             ))}
             {!!user && (
               <Button
+                className="navItem"
                 key={"logout"}
                 onClick={logout}
-                sx={{ my: 2, color: "white", display: "block" }}
+                sx={{ my: 2, fontWeight: "fontWeightBold", color: "#542701", display: "block" }}
               >
                 {"logout"}
               </Button>

@@ -10,7 +10,10 @@ const root = createRoot(rootElement);
 
 const theme = createTheme({
   palette: {
-    primary: { main: "#3a34d2" }
+    primary: {
+      main: '#a4d3f2',
+
+    }
   }
 });
 
