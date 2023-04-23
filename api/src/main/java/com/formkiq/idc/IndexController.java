@@ -9,17 +9,23 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 import com.formkiq.idc.elasticsearch.Document;
 import com.formkiq.idc.elasticsearch.ElasticsearchService;
 import com.formkiq.idc.elasticsearch.Status;
 import com.formkiq.idc.kafka.TesseractProducer;
+import com.formkiq.idc.syntax.QueryTokenizer;
+import com.formkiq.idc.syntax.QueryTokensAnalyzer;
+import com.formkiq.idc.syntax.Token;
+import com.formkiq.idc.syntax.TokenType;
+import com.formkiq.idc.syntax.Tokenizer;
 
 import co.elastic.clients.elasticsearch._types.Result;
 import io.micronaut.context.annotation.Value;
@@ -45,25 +51,18 @@ import jakarta.inject.Inject;
 @Secured(SecurityRule.IS_AUTHENTICATED)
 public class IndexController {
 
-	private final static Pattern tagTextPattern = Pattern.compile("^\\[[a-zA-Z0-9_]+\\][\\s]*=.*$");
-	private final static Pattern tagTextSplit = Pattern.compile("\\s*=\\s*");
-
 	@Inject
 	private ElasticsearchService elasticService;
 
 	@Inject
 	private TesseractProducer producer;
 
+	private Tokenizer queryTokenizer = new QueryTokenizer();
+
 	@Value("${storage.directory}")
 	private String storageDirectory;
 
-	@Delete("/documents/{documentId}/tags/{tagKey}/{tagValue}")
-	@Produces(MediaType.APPLICATION_JSON)
-	public HttpResponse<?> deleteTagKeyValue(@PathVariable String documentId, @PathVariable String tagKey,
-			@PathVariable String tagValue) throws IOException {
-		return this.elasticService.deleteDocumentTag(INDEX, documentId, tagKey, tagValue) ? HttpResponse.ok()
-				: HttpResponse.notFound();
-	}
+	private QueryTokensAnalyzer tokensAnalyzer = new QueryTokensAnalyzer();
 
 	@Delete("/documents/{documentId}")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -76,6 +75,14 @@ public class IndexController {
 		}
 
 		return this.elasticService.deleteDocument(INDEX, documentId) ? HttpResponse.ok() : HttpResponse.notFound();
+	}
+
+	@Delete("/documents/{documentId}/tags/{tagKey}/{tagValue}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public HttpResponse<?> deleteTagKeyValue(@PathVariable String documentId, @PathVariable String tagKey,
+			@PathVariable String tagValue) throws IOException {
+		return this.elasticService.deleteDocumentTag(INDEX, documentId, tagKey, tagValue) ? HttpResponse.ok()
+				: HttpResponse.notFound();
 	}
 
 	@Get("/documents/{documentId}/content")
@@ -96,6 +103,86 @@ public class IndexController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Document getDocument(@PathVariable String documentId) throws IOException {
 		return this.elasticService.getDocument(INDEX, documentId);
+	}
+
+	@Post(value = "/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+	public HttpResponse<SearchResponse> search(@Body SearchRequest request) {
+
+		try {
+			List<Document> documents = searchElastic(request);
+			documents.forEach(doc -> doc.setContent(null));
+
+			SearchResponse response = new SearchResponse();
+			response.setDocuments(documents);
+
+			return HttpResponse.ok(response);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			return HttpResponse.badRequest();
+		}
+	}
+
+	private List<Document> searchElastic(List<Token> tokens) throws IOException {
+		Token lastToken = null;
+
+		Iterator<Token> itr = tokens.iterator();
+
+		String searchText = null;
+		Map<String, String> searchTags = new HashMap<>();
+
+		while (itr.hasNext()) {
+			Token token = itr.next();
+
+			if (lastToken == null && TokenType.IDENTIFIER.equals(token.getType())) {
+				lastToken = token;
+			} else if (TokenType.ASSIGNMENT_OPERATOR.equals(token.getType())) {
+				token = itr.next();
+
+				String key = lastToken.getValue();
+				if (key.startsWith("[") && key.endsWith("]")) {
+					key = key.substring(1, key.length() - 1);
+				}
+
+				searchTags.put(key, token.getValue());
+
+				lastToken = null;
+			} else if (lastToken != null && TokenType.KEYWORD.equals(token.getType())) {
+				searchText = lastToken.getValue();
+				lastToken = null;
+			}
+		}
+
+		if (lastToken != null) {
+			searchText = lastToken.getValue();
+		}
+
+		List<Document> documents = elasticService.search("documents", searchText, searchTags);
+		return documents;
+	}
+
+	private List<Document> searchElastic(SearchRequest request) throws IOException {
+
+		List<Document> documents = Collections.emptyList();
+		String text = request.getText() != null ? request.getText().trim() : null;
+
+		if (text != null) {
+			List<Token> tokens = queryTokenizer.tokenize(text);
+
+			boolean valid = tokensAnalyzer.isValid(tokens);
+			
+			if (valid) {
+				documents = searchElastic(tokens);	
+			} else {
+				documents = elasticService.search("documents", text, null);
+			}
+
+		} else {
+
+			documents = elasticService.search("documents", "", null);
+		}
+
+		return documents;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -124,45 +211,6 @@ public class IndexController {
 			e.printStackTrace();
 			return HttpResponse.badRequest();
 		}
-	}
-
-	@Post(value = "/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	public HttpResponse<SearchResponse> search(@Body SearchRequest request) {
-
-		try {
-			List<Document> documents = searchElastic(request);
-			documents.forEach(doc -> doc.setContent(null));
-
-			SearchResponse response = new SearchResponse();
-			response.setDocuments(documents);
-
-			return HttpResponse.ok(response);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-			return HttpResponse.badRequest();
-		}
-	}
-
-	private List<Document> searchElastic(SearchRequest request) throws IOException {
-
-		Map<String, String> tags = new HashMap<>();
-		String text = request.getText() != null ? request.getText().trim() : null;
-
-		if (text != null && tagTextPattern.matcher(text).matches()) {
-
-			String[] strs = tagTextSplit.split(text);
-			if (strs.length == 2) {
-				String key = strs[0].substring(1, strs[0].length() - 1);
-				String value = strs[1];
-
-				tags.put(key, value);
-				text = null;
-			}
-		}
-
-		List<Document> documents = elasticService.search("documents", text, tags);
-		return documents;
 	}
 
 	@Post("/upload")

@@ -304,6 +304,14 @@ class IntegrationTest extends AbstractTest {
 		List<Map<String, Object>> search = searchResults(req);
 		assertEquals(1, search.size());
 
+		req.setText(" [category] = invoice and [loc]=new york");
+		search = searchResults(req);
+		assertEquals(1, search.size());
+		
+		req.setText(" [category] = invoice and [loc] = Florida");
+		search = searchResults(req);
+		assertEquals(0, search.size());
+		
 		Path path = Path.of(storageDirectory, documentId, resourceName);
 		assertTrue(path.toFile().exists());
 
