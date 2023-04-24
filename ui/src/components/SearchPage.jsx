@@ -2,14 +2,7 @@ import { Container, TextField, InputAdornment } from "@mui/material";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import ButtonGroup from "@mui/material/ButtonGroup";
 import Typography from "@mui/material/Typography";
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import IconButton from "@mui/material/IconButton";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import DownloadIcon from '@mui/icons-material/DownloadOutlined';
@@ -19,11 +12,9 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from "../hooks/useAuth";
 import { DataGrid, GridColDef, GridValueGetterParams, GridActionsCellItem } from '@mui/x-data-grid';
 import moment from 'moment'
-import { display } from '@mui/system';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 
 export const SearchPage = ({ title, icon }) => {
