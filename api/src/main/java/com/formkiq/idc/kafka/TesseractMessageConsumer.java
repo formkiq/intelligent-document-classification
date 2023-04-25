@@ -25,20 +25,21 @@ import net.sourceforge.tess4j.TesseractException;
 @KafkaListener(offsetReset = OffsetReset.LATEST)
 public class TesseractMessageConsumer {
 
-	@Value("${storage.directory}")
-	private String storageDirectory;
+	@Inject
+	ElasticsearchService elasticService;
 
 	@Inject
 	DocumentTaggerProducer producer;
 
-	@Inject
-	ElasticsearchService elasticService;
+	@Value("${storage.directory}")
+	private String storageDirectory;
 
 	@Topic("tesseract")
 	public void receive(@KafkaKey String key, final String path) throws IOException {
 
 		System.out.println("processing ocr: " + path + " (" + key + ")");
 
+		updateStatus(key, Status.OCR_IN_PROGRESS);
 		Document document = elasticService.getDocumentWithoutContent(INDEX, key);
 		String contentType = document.getContentType();
 
@@ -83,9 +84,14 @@ public class TesseractMessageConsumer {
 		} catch (TesseractException e) {
 			e.printStackTrace();
 
-			document = new Document();
-			document.setStatus(Status.OCR_FAILED.name());
-			elasticService.updateDocument(INDEX, key, document);
+			updateStatus(key, Status.OCR_FAILED);
 		}
+	}
+
+	private void updateStatus(String key, Status status) throws IOException {
+		Document document;
+		document = new Document();
+		document.setStatus(status.name());
+		elasticService.updateDocument(INDEX, key, document);
 	}
 }

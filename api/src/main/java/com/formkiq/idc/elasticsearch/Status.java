@@ -1,5 +1,5 @@
 package com.formkiq.idc.elasticsearch;
 
 public enum Status {
-	NEW, OCR_FAILED, OCR_COMPLETE, ML_FAILED, COMPLETE
+	COMPLETE, ML_FAILED, NEW, OCR_COMPLETE, OCR_FAILED, OCR_IN_PROGRESS
 }
