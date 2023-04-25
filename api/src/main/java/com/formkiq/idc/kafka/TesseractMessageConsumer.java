@@ -22,7 +22,7 @@ import jakarta.inject.Inject;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 
-@KafkaListener(offsetReset = OffsetReset.EARLIEST)
+@KafkaListener(offsetReset = OffsetReset.LATEST)
 public class TesseractMessageConsumer {
 
 	@Value("${storage.directory}")

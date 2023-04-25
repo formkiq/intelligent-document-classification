@@ -45,7 +45,7 @@ import io.micronaut.context.annotation.Value;
 import io.micronaut.http.MediaType;
 import jakarta.inject.Inject;
 
-@KafkaListener(offsetReset = OffsetReset.EARLIEST)
+@KafkaListener(offsetReset = OffsetReset.LATEST)
 public class DocumentTaggerConsumer {
 
 	private static final double CATEGORY_MIN_SCORE = 0.60;
