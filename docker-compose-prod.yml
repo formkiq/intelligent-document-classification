@@ -18,13 +18,12 @@ services:
       - /etc/letsencrypt/:/etc/letsencrypt/
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
-  zookeeper:
+  zookeeper1:
     restart: unless-stopped
-    build: 
-      context: ./zookeeper
+    image: zookeeper:3.8.1-temurin
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zookeeper1:2888:3888;2181
     ports:
       - 22181:2181
 
@@ -33,12 +32,12 @@ services:
       context: ./kafka
     restart: unless-stopped
     depends_on:
-      - zookeeper
+      - zookeeper1
     ports:
       - 29092:29092
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper1:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://kafka:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
