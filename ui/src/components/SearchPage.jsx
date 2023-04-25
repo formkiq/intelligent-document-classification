@@ -291,9 +291,11 @@ export const SearchPage = ({ title, icon }) => {
 
   function deleteDocumentTag(id) {
 
-    const found = tags.find(element => element.id === id);
-    if (user && user.access_token && found) {
-      fetch('/api/documents/' + documentId + '/tags/' + found.key + '/' + found.value, {
+    const found = results.find(element => element.documentId === documentId);
+    const foundTag = tags.find(element => element.id === id);
+
+    if (user && user.access_token && found && foundTag) {
+      fetch('/api/documents/' + documentId + '/tags/' + foundTag.key + '/' + foundTag.value, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -307,6 +309,9 @@ export const SearchPage = ({ title, icon }) => {
           setTags((prevResults) =>
             prevResults.filter((row, index) => row.id !== id)
           );
+
+          var filteredTags = found.tags[foundTag.key].filter(function(e) { return e !== foundTag.value })
+          found.tags[foundTag.key] = filteredTags;
 
         } else if (response.status === 401) {
           logout();
