@@ -3,6 +3,7 @@ version: "3.7"
 services:
 
   ui:
+    restart: unless-stopped
     build: 
       context: ./ui
       args:
@@ -18,6 +19,7 @@ services:
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
   zookeeper:
+    restart: unless-stopped
     build: 
       context: ./zookeeper
     environment:
@@ -29,6 +31,7 @@ services:
   kafka:
     build: 
       context: ./kafka
+    restart: unless-stopped
     depends_on:
       - zookeeper
     ports:
@@ -43,6 +46,7 @@ services:
 
   apiml:
     build: ./api_ml
+    restart: unless-stopped
     environment:
       - STORAGE_DIRECTORY=/app/documents
     security_opt:
@@ -54,6 +58,7 @@ services:
 
   api:
     build: ./api
+    restart: unless-stopped
     depends_on:
       - apiml
       - kafka
