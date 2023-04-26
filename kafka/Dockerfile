@@ -1,29 +1,15 @@
-FROM alpine:3.16
+FROM eclipse-temurin:17.0.6_10-jre-alpine
 
 ENV KAFKA_VERSION 3.4.0
-ENV SCALA_VERSION 2.13
+ENV kafka_bin_version=2.12-$KAFKA_VERSION
 
-LABEL name="kafka" version=${KAFKA_VERSION}
-
-RUN apk add curl
-
-RUN curl https://downloads.apache.org/kafka/3.4.0/kafka_2.13-${KAFKA_VERSION}.tgz | tar -xzf - -C /opt  && mv /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka
-
-ENV PATH /sbin:/opt/kafka/bin/:$PATH
+RUN apk add --no-cache bash curl ca-certificates \
+  && mkdir -p /opt/kafka \
+  && curl -SLs "https://downloads.apache.org/kafka/${KAFKA_VERSION}/kafka_2.13-${KAFKA_VERSION}.tgz" | tar -xzf - --strip-components=1 -C /opt/kafka \
+  && rm -rf /var/cache/apk/*
 
 WORKDIR /opt/kafka
+ENTRYPOINT ["bin/kafka-server-start.sh"]
 
-VOLUME ["/tmp/kafka-logs"]
-
-EXPOSE 9092 2181
-
-# COPY config/log4j.properties /opt/kafka/config/
-COPY config/server.properties /opt/kafka/config/
-COPY config/zookeeper.properties /opt/kafka/config/
-COPY kafka-entrypoint.sh /kafka-entrypoint.sh
-COPY scripts /
-
-ENTRYPOINT ["/kafka-entrypoint.sh"]
-CMD ["kafka-server-start.sh", "config/server.properties"]
-
-# HEALTHCHECK --interval=5s --timeout=2s --retries=5 CMD bin/health.sh
+RUN sed -i 's/zookeeper.connect=localhost:2181/zookeeper.connect=zookeeper1:2181/' config/server.properties
+CMD ["config/server.properties"]
