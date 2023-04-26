@@ -34,14 +34,7 @@ services:
     depends_on:
       - zookeeper1
     ports:
-      - 29092:29092
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper1:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      - 9092:9092
 
   apiml:
     build: ./api_ml
@@ -65,7 +58,7 @@ services:
       - storage.directory=/app/documents
       - elasticsearch.url=http://${AZL_IP}:9200
       - api.ml.url=http://apiml:5000
-      - kafka.bootstrap.servers=http://kafka:29092
+      - kafka.bootstrap.servers=http://kafka:9092
       - api.username=${API_USERNAME}
       - api.password=${API_PASSWORD}
     ports:
