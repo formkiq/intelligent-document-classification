@@ -2,6 +2,9 @@ micronaut:
   application:
     name: api
   server:
+    max-request-size: '100MB'
+    multipart:
+        max-file-size: '100MB'
     cors:
       enabled: true
   security:
