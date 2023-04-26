@@ -12,12 +12,10 @@ public class QueryTokenizer implements Tokenizer {
 
 	private Tokenizer tokenizer = new BasicTokenizer(KEYWORDS);
 
-	private List<Token> joinCategory(List<Token> tokens) {
+	private List<Token> joinTokens(List<Token> tokens) {
 
 		List<Token> list = new ArrayList<>();
 		Iterator<Token> itr = tokens.iterator();
-
-		List<Token> queue = null;
 
 		while (itr.hasNext()) {
 
@@ -25,20 +23,11 @@ public class QueryTokenizer implements Tokenizer {
 
 			if (TokenType.SQUARE_BRACKET_LEFT.equals(token.getType())) {
 
-				queue = new ArrayList<Token>();
+				list.addAll(joinTokens(token, itr, TokenType.SQUARE_BRACKET_RIGHT));
 
-			} else if (queue != null) {
+			} else if (TokenType.QUOTE.equals(token.getType())) {
 
-				if (TokenType.SQUARE_BRACKET_RIGHT.equals(token.getType())) {
-
-					String s = "[" + queue.stream().map(t -> t.getValue()).collect(Collectors.joining()).trim() + "]";
-					list.add(new Token(TokenType.IDENTIFIER, s));
-
-					queue = null;
-
-				} else {
-					queue.add(token);
-				}
+				list.addAll(joinTokens(token, itr, TokenType.QUOTE));
 
 			} else {
 				list.add(token);
@@ -48,12 +37,36 @@ public class QueryTokenizer implements Tokenizer {
 		return list;
 	}
 
+	private List<Token> joinTokens(Token token, Iterator<Token> itr, TokenType endType) {
+		List<Token> queue = new ArrayList<Token>();
+		queue.add(token);
+		
+		token = itr.next();
+
+		while (itr.hasNext() && !endType.equals(token.getType())) {
+			queue.add(token);
+			token = itr.next();
+		}
+
+		if (token != null) {
+			queue.add(token);
+		}
+
+		if (endType.equals(token.getType())) {
+			String s = queue.stream().map(t -> t.getValue()).collect(Collectors.joining()).trim();
+			queue.clear();
+			queue.add(new Token(TokenType.IDENTIFIER, s));
+		}
+
+		return queue;
+	}
+
 	@Override
 	public List<Token> tokenize(String s) {
 
 		List<Token> tokens = tokenizer.tokenize(s);
 
-		tokens = joinCategory(tokens);
+		tokens = joinTokens(tokens);
 
 		tokens = tokens.stream().filter(t -> !TokenType.WHITESPACE.equals(t.getType())).collect(Collectors.toList());
 

@@ -5,6 +5,7 @@ import java.util.List;
 
 public class BasicTokenizer implements Tokenizer {
 
+	private static final String QUOTES = "'\"";
 	private static final String OPERATORS = "=<>";
 	private int currentPosition;
 
@@ -74,7 +75,7 @@ public class BasicTokenizer implements Tokenizer {
 		this.currentPosition = 0;
 
 		List<Token> tokens = new ArrayList<>();
-		
+
 		if (input != null) {
 			while (currentPosition < input.length()) {
 				char currentChar = input.charAt(currentPosition);
@@ -90,7 +91,12 @@ public class BasicTokenizer implements Tokenizer {
 					tokens.add(parseOperator());
 				} else {
 					String s = String.valueOf(currentChar);
-					tokens.add(new Token(defaultToken(s), s));
+
+					if (QUOTES.indexOf(currentChar) != -1) {
+						tokens.add(new Token(TokenType.QUOTE, s));
+					} else {
+						tokens.add(new Token(defaultToken(s), s));
+					}
 					currentPosition++;
 				}
 			}

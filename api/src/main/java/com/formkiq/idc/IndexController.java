@@ -140,7 +140,7 @@ public class IndexController {
 				token = itr.next();
 
 				String key = lastToken.getValue();
-				if (key.startsWith("[") && key.endsWith("]")) {
+				if ((key.startsWith("[") && key.endsWith("]")) || (key.startsWith("\"") && key.endsWith("\""))) {
 					key = key.substring(1, key.length() - 1);
 				}
 
@@ -170,9 +170,9 @@ public class IndexController {
 			List<Token> tokens = queryTokenizer.tokenize(text);
 
 			boolean valid = tokensAnalyzer.isValid(tokens);
-			
+
 			if (valid) {
-				documents = searchElastic(tokens);	
+				documents = searchElastic(tokens);
 			} else {
 				documents = elasticService.search("documents", text, null);
 			}

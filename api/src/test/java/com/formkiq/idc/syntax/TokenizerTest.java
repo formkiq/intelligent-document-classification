@@ -101,8 +101,64 @@ class TokenizerTest {
 	
 	@Test
 	void testQueryTokenizer05() {
+		String input = "[category 2 = something ";
+
+		List<Token> tokens = queryTokenizer.tokenize(input);
+
+		int i = 0;
+		assertEquals(TokenType.SQUARE_BRACKET_LEFT, tokens.get(i).getType());
+		assertEquals("[", tokens.get(i++).getValue());
+
+		assertEquals(TokenType.IDENTIFIER, tokens.get(i).getType());
+		assertEquals("category", tokens.get(i++).getValue());
+		
+		assertEquals(TokenType.NUMBER, tokens.get(i).getType());
+		assertEquals("2", tokens.get(i++).getValue());
+
+		assertEquals(TokenType.ASSIGNMENT_OPERATOR, tokens.get(i).getType());
+		assertEquals("=", tokens.get(i++).getValue());
+		
+		assertEquals(TokenType.IDENTIFIER, tokens.get(i).getType());
+		assertEquals("something", tokens.get(i++).getValue());
+		
+		assertFalse(tokensAnalyzer.isValid(tokens));
+	}
+	
+	@Test
+	void testQueryTokenizer06() {
 		String input = null;
 		List<Token> tokens = queryTokenizer.tokenize(input);		
 		assertFalse(tokensAnalyzer.isValid(tokens));
+	}
+	
+	@Test
+	void testQueryTokenizer07() {
+		String input = "[category 2] = something and [category]=\"something else\"";
+
+		List<Token> tokens = queryTokenizer.tokenize(input);
+
+		int i = 0;
+		assertEquals(TokenType.IDENTIFIER, tokens.get(i).getType());
+		assertEquals("[category 2]", tokens.get(i++).getValue());
+
+		assertEquals(TokenType.ASSIGNMENT_OPERATOR, tokens.get(i).getType());
+		assertEquals("=", tokens.get(i++).getValue());
+
+		assertEquals(TokenType.IDENTIFIER, tokens.get(i).getType());
+		assertEquals("something", tokens.get(i++).getValue());
+
+		assertEquals(TokenType.KEYWORD, tokens.get(i).getType());
+		assertEquals("and", tokens.get(i++).getValue());
+
+		assertEquals(TokenType.IDENTIFIER, tokens.get(i).getType());
+		assertEquals("[category]", tokens.get(i++).getValue());
+
+		assertEquals(TokenType.ASSIGNMENT_OPERATOR, tokens.get(i).getType());
+		assertEquals("=", tokens.get(i++).getValue());
+
+		assertEquals(TokenType.IDENTIFIER, tokens.get(i).getType());
+		assertEquals("\"something else\"", tokens.get(i++).getValue());
+		
+		assertTrue(tokensAnalyzer.isValid(tokens));
 	}
 }
