@@ -245,6 +245,10 @@ class IntegrationTest extends AbstractTest {
 		search.setText("");
 		List<Map<String, Object>> list = searchResults(search);
 		assertFalse(list.isEmpty());
+		
+		search.setText(resourceName);
+		list = searchResults(search);
+		assertFalse(list.isEmpty());
 
 		assertNotNull(list.get(0).get("documentId"));
 		assertNotNull(list.get(0).get("insertedDate"));

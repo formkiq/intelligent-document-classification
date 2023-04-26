@@ -20,6 +20,7 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.MultiMatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.DeleteResponse;
@@ -144,7 +145,10 @@ public class ElasticsearchService {
 						List<Query> queries = new ArrayList<>();
 
 						if (searchText != null && searchText.trim().length() > 0) {
-							Query textQuery = Query.of(tq -> tq.match(mq -> mq.field("content").query(searchText)));
+							Query textQuery = MultiMatchQuery
+									.of(mmq -> mmq.fields(Arrays.asList("content", "filename")).query(searchText))
+									._toQuery();
+//							Query textQuery = Query.of(tq -> tq.match(mq -> mq.field("content").query(searchText)));
 							queries.add(textQuery);
 						}
 
