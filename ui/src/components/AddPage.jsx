@@ -26,7 +26,6 @@ export const AddPage = ({ title, icon }) => {
         }
       })
       .then(response => {
-        console.log(response);
 
         let obj = {path: acceptedFiles[0].path, status: "success"};
         setFiles(current => [...current, obj]);

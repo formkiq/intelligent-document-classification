@@ -224,7 +224,6 @@ export const SearchPage = ({ title, icon }) => {
       })
       .then(data => {
         if (data && data.documents) {
-          console.log("DOCUMENTS: " + JSON.stringify(data.documents));
           setResults(data.documents);
           setTags([]);
           setDisplayTags("none");
