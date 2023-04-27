@@ -145,8 +145,8 @@ public class ElasticsearchService {
 						List<Query> queries = new ArrayList<>();
 
 						if (searchText != null && searchText.trim().length() > 0) {
-							Query textQuery = MultiMatchQuery
-									.of(mmq -> mmq.fields(Arrays.asList("content", "filename")).query(searchText))
+							Query textQuery = MultiMatchQuery.of(
+									mmq -> mmq.fields(Arrays.asList("title", "content", "filename")).query(searchText))
 									._toQuery();
 //							Query textQuery = Query.of(tq -> tq.match(mq -> mq.field("content").query(searchText)));
 							queries.add(textQuery);
