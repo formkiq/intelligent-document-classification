@@ -86,9 +86,11 @@ class IntegrationTest extends AbstractTest {
 	String storageDirectory;
 
 	@BeforeAll
-	public void beforeEach() {
+	public void beforeEach() throws InterruptedException {
 		System.setProperty("api.username", "admin");
 		System.setProperty("api.password", "password");
+		
+		TimeUnit.SECONDS.sleep(5);
 	}
 
 	private HttpResponse<?> delete(String documentId) throws IOException {

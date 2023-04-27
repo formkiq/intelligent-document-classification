@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.formkiq.idc.elasticsearch.Document;
+import com.formkiq.idc.elasticsearch.ElasticSeachRequest;
 import com.formkiq.idc.elasticsearch.ElasticsearchService;
 import com.formkiq.idc.elasticsearch.Status;
 import com.formkiq.idc.kafka.TesseractProducer;
@@ -63,6 +64,45 @@ public class IndexController {
 	private String storageDirectory;
 
 	private QueryTokensAnalyzer tokensAnalyzer = new QueryTokensAnalyzer();
+
+	ElasticSeachRequest createElasticSearchRequest(List<Token> tokens) {
+		Token lastToken = null;
+
+		Iterator<Token> itr = tokens.iterator();
+
+		String searchText = null;
+		Map<String, String> searchTags = new HashMap<>();
+
+		while (itr.hasNext()) {
+			Token token = itr.next();
+
+			if (lastToken == null && TokenType.IDENTIFIER.equals(token.getType())) {
+				lastToken = token;
+			} else if (TokenType.ASSIGNMENT_OPERATOR.equals(token.getType())) {
+				token = itr.next();
+
+				String key = lastToken.getValue();
+				if (key.startsWith("[") && key.endsWith("]")) {
+					key = key.substring(1, key.length() - 1);
+				}
+
+				String value = stripQuotes(token.getValue());
+
+				searchTags.put(key, value);
+
+				lastToken = null;
+			} else if (lastToken != null && TokenType.KEYWORD.equals(token.getType())) {
+				searchText = lastToken.getValue();
+				lastToken = null;
+			}
+		}
+
+		if (lastToken != null) {
+			searchText = lastToken.getValue();
+		}
+
+		return new ElasticSeachRequest(stripQuotes(searchText), searchTags);
+	}
 
 	@Delete("/documents/{documentId}")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -124,40 +164,10 @@ public class IndexController {
 	}
 
 	private List<Document> searchElastic(List<Token> tokens) throws IOException {
-		Token lastToken = null;
 
-		Iterator<Token> itr = tokens.iterator();
+		ElasticSeachRequest searchRequest = createElasticSearchRequest(tokens);
 
-		String searchText = null;
-		Map<String, String> searchTags = new HashMap<>();
-
-		while (itr.hasNext()) {
-			Token token = itr.next();
-
-			if (lastToken == null && TokenType.IDENTIFIER.equals(token.getType())) {
-				lastToken = token;
-			} else if (TokenType.ASSIGNMENT_OPERATOR.equals(token.getType())) {
-				token = itr.next();
-
-				String key = lastToken.getValue();
-				if ((key.startsWith("[") && key.endsWith("]")) || (key.startsWith("\"") && key.endsWith("\""))) {
-					key = key.substring(1, key.length() - 1);
-				}
-
-				searchTags.put(key, token.getValue());
-
-				lastToken = null;
-			} else if (lastToken != null && TokenType.KEYWORD.equals(token.getType())) {
-				searchText = lastToken.getValue();
-				lastToken = null;
-			}
-		}
-
-		if (lastToken != null) {
-			searchText = lastToken.getValue();
-		}
-
-		List<Document> documents = elasticService.search("documents", searchText, searchTags);
+		List<Document> documents = elasticService.search("documents", searchRequest.getText(), searchRequest.getTags());
 		return documents;
 	}
 
@@ -183,6 +193,14 @@ public class IndexController {
 		}
 
 		return documents;
+	}
+
+	private String stripQuotes(String value) {
+		if (value != null && (value.startsWith("\"") || value.startsWith("'"))
+				&& (value.endsWith("\"") || value.endsWith("'"))) {
+			value = value.substring(1, value.length() - 1);
+		}
+		return value;
 	}
 
 	@SuppressWarnings("unchecked")

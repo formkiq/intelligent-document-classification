@@ -28,7 +28,7 @@ public class QueryTokensAnalyzer implements TokensAnalyzer {
 					list.push(token);
 				}
 			}
-			
+
 			if (!list.isEmpty()) {
 				valid = isValid(list);
 			}
@@ -45,10 +45,11 @@ public class QueryTokensAnalyzer implements TokensAnalyzer {
 			Token t1 = list.pop();
 			Token t2 = list.pop();
 
-			valid = TokenType.IDENTIFIER.equals(t0.getType())
-					&& TokenType.ASSIGNMENT_OPERATOR.equals(t1.getType())
+			valid = TokenType.IDENTIFIER.equals(t0.getType()) && TokenType.ASSIGNMENT_OPERATOR.equals(t1.getType())
 					&& TokenType.IDENTIFIER.equals(t2.getType());
 
+		} else if (list.size() == 1) {
+			valid = TokenType.IDENTIFIER.equals(list.pop().getType());
 		} else {
 			valid = false;
 		}
