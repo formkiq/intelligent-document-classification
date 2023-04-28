@@ -1,4 +1,4 @@
-FROM gradle:8-jdk17-alpine as build
+FROM --platform=linux/amd64 gradle:8-jdk17-alpine as build
 
 WORKDIR /workspace/app
 
@@ -12,7 +12,7 @@ COPY micronaut-cli.yml micronaut-cli.yml
 
 RUN ./gradlew build -x test
 
-FROM eclipse-temurin:17.0.6_10-jre-alpine
+FROM --platform=linux/amd64 eclipse-temurin:17-jre-alpine
 
 RUN apk add --no-cache tesseract-ocr
 

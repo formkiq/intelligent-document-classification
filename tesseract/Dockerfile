@@ -1,4 +1,4 @@
-FROM openjdk:19-jdk-alpine3.16
+FROM --platform=linux/amd64 openjdk:19-jdk-alpine3.16
 
 RUN apk update
 

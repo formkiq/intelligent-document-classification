@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17.0.6_10-jre-alpine
+FROM --platform=linux/amd64 eclipse-temurin:17-jre-alpine
 
 ENV KAFKA_VERSION 3.4.0
 ENV kafka_bin_version=2.12-$KAFKA_VERSION

@@ -12,34 +12,29 @@ services:
     ports:
       - 80:80
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.3.3
+  zookeeper1:
+    image: zookeeper:3.8.1-temurin
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zookeeper1:2888:3888;2181
     ports:
       - 22181:2181
 
   kafka:
-    image: confluentinc/cp-kafka:7.3.3
+    build: 
+      context: ./kafka
+    restart: unless-stopped
     depends_on:
-      - zookeeper
+      - zookeeper1
     ports:
-      - 29092:29092
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      - 9092:9092
 
   apiml:
     build: ./api_ml
     environment:
       - STORAGE_DIRECTORY=/app/documents
     ports:
-      - 5000:5000
+      - 5005:5005
     volumes:
       - documents:/app/documents
 
@@ -52,8 +47,8 @@ services:
     environment:
       - storage.directory=/app/documents
       - elasticsearch.url=http://elasticsearch:9200
-      - api.ml.url=http://apiml:5000
-      - kafka.bootstrap.servers=http://kafka:29092
+      - api.ml.url=http://apiml:5005
+      - kafka.bootstrap.servers=http://kafka:9092
       - api.username=admin
       - api.password=password
     ports:
@@ -72,13 +67,13 @@ services:
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
 
-  kibana:
-    image: kibana:8.2.2
-    ports:
-      - target: 5601
-        published: 5601
-    depends_on:
-      - elasticsearch
+#  kibana:
+#    image: kibana:8.2.2
+#    ports:
+#      - target: 5601
+#        published: 5601
+#    depends_on:
+#      - elasticsearch
 
 volumes:
   documents:
