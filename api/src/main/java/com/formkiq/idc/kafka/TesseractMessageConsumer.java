@@ -34,6 +34,23 @@ public class TesseractMessageConsumer {
 	@Value("${storage.directory}")
 	private String storageDirectory;
 
+	private String dataPath;
+
+	public TesseractMessageConsumer() {
+
+		if (Path.of("/opt/homebrew/lib").toFile().exists()) {
+			System.setProperty("jna.library.path", "/opt/homebrew/lib");
+		}
+
+		if (Path.of("/opt/homebrew/share/tessdata").toFile().exists()) {
+			this.dataPath = "/opt/homebrew/share/tessdata";
+		} else if (Path.of("/usr/local/share/tessdata").toFile().exists()) {
+			this.dataPath = "/usr/local/share/tessdata";
+		} else {
+			this.dataPath = "/usr/share/tessdata";
+		}
+	}
+
 	@Topic("tesseract")
 	public void receive(@KafkaKey String key, final String path) throws IOException {
 
@@ -48,13 +65,7 @@ public class TesseractMessageConsumer {
 			Path ocrFile = Path.of(storageDirectory, key, "ocr.txt");
 
 			Tesseract tesseract = new Tesseract();
-
-			if (Path.of("/usr/local/share/tessdata").toFile().exists()) {
-				tesseract.setDatapath("/usr/local/share/tessdata");
-			} else {
-				tesseract.setDatapath("/usr/share/tessdata");
-			}
-
+			tesseract.setDatapath(this.dataPath);
 			tesseract.setLanguage("eng");
 			tesseract.setPageSegMode(1);
 			tesseract.setOcrEngineMode(1);
