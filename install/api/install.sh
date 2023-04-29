@@ -8,7 +8,7 @@ curl -L https://github.com/docker/compose/releases/download/1.22.0/docker-compos
 
 chmod +x /usr/local/bin/docker-compose
 
-git clone https://github.com/formkiq/intelligent-document-classification.git ~
+git clone https://github.com/formkiq/intelligent-document-classification.git ~/intelligent-document-classification
 cd ~/intelligent-document-classification
 git checkout --track origin/v1
 
