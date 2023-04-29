@@ -41,6 +41,8 @@ docker-compose -f docker-compose-prod.yml build --build-arg SERVER_NAME="app.${I
 echo "Launching Docker Project"
 docker-compose -f docker-compose-prod.yml up -d > /tmp/up.txt 2>/tmp/uperr.txt
 
+docker ps > /tmp/ps.txt 2>/tmp/pserr.txt
+
 echo "Generating Lets Encrypt Certificate"
 rm -r -f /etc/letsencrypt/
 docker run -it --rm -v /var/www/certbot/:/var/www/certbot/ -v /etc/letsencrypt/:/etc/letsencrypt/ certbot/certbot certonly --webroot --register-unsafely-without-email --agree-tos --webroot-path=/var/www/certbot/ -d "app.${IP_PUBLIC}.nip.io"
