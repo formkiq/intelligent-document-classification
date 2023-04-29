@@ -41,6 +41,9 @@ docker-compose -f docker-compose-prod.yml build --build-arg SERVER_NAME="app.${I
 echo "Launching Docker Project"
 docker-compose -f docker-compose-prod.yml up -d > /tmp/up.txt 2>/tmp/uperr.txt
 
+echo "Launching Docker PS"
+docker ps
+
 docker ps > /tmp/ps.txt 2>/tmp/pserr.txt
 
 echo "Generating Lets Encrypt Certificate"
