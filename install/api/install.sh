@@ -30,7 +30,14 @@ docker-compose -f docker-compose-prod.yml run --rm --entrypoint "\
   openssl req -x509 -nodes -newkey rsa:4096 -days 1000\
     -keyout '$path/privkey.pem' \
     -out '$path/fullchain.pem' \
-    -subj '/CN=localhost'" certbot > /tmp/self_signed.txt 2> /tmp/self_signed_err.txt
+    -subj '/CN=localhost'" certbot
+
+if [ $? -eq 0 ] 
+then 
+  echo "Successfully creating self signed certificate"
+else
+  echo "Error creating self signed certificate"
+fi
 
 echo "Building Docker Project"
 docker-compose -f docker-compose-prod.yml build --build-arg SERVER_NAME="app.${IP_PUBLIC}.nip.io" > /tmp/build.txt 2> /tmp/build_err.txt
