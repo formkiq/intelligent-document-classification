@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set +e
-
 yum -y update
 
 yum -y install docker git
@@ -28,39 +26,25 @@ mkdir -p "$path"
 echo "Generating Self Signed Certificate"
 openssl req -x509 -nodes -newkey rsa:4096 -days 1000 -keyout "${path}/privkey.pem" -out "${path}/fullchain.pem" -subj "/CN=localhost"
 
-if [ $? -eq 0 ] 
-then 
-  echo "Successfully creating self signed certificate"
-else
-  echo "Error creating self signed certificate"
-fi
-
 echo "Building Docker Project"
-docker-compose -f docker-compose-prod.yml build --build-arg SERVER_NAME="app.${IP_PUBLIC}.nip.io" > /tmp/build.txt 2>/tmp/builderr.txt
+docker-compose -f docker-compose-prod.yml build --build-arg SERVER_NAME="app.${IP_PUBLIC}.nip.io"
 
 echo "Launching Docker Project"
-docker-compose -f docker-compose-prod.yml up -d > /tmp/up.txt 2>/tmp/uperr.txt
+docker-compose -f docker-compose-prod.yml up -d
 
 echo "Launching Docker PS"
 docker ps
-
-docker ps > /tmp/ps.txt 2>/tmp/pserr.txt
 
 echo "Generating Lets Encrypt Certificate"
 rm -r -f /etc/letsencrypt/
 docker run -it --rm -v /var/www/certbot/:/var/www/certbot/ -v /etc/letsencrypt/:/etc/letsencrypt/ certbot/certbot certonly --webroot --register-unsafely-without-email --agree-tos --webroot-path=/var/www/certbot/ -d "app.${IP_PUBLIC}.nip.io"
 
-echo "Let's Encrypt Result: $?"
-
-if [ $? -eq 0 ] 
-then 
-  echo "Successfully created domain certificate"
-  docker-compose -f docker-compose-prod.yml down 
-else 
-  docker-compose -f docker-compose-prod.yml down
+if [ ! -f "${path}/fullchain.pem" ]; then
   echo "Defaulting to Self-signed certificate"
-  rm -r -f /etc/letsencrypt/
-  mkdir -p "$path"
-
   openssl req -x509 -nodes -newkey rsa:4096 -days 1000 -keyout "${path}/privkey.pem" -out "${path}/fullchain.pem" -subj "/CN=localhost"
 fi
+
+docker-compose -f docker-compose-prod.yml down 
+
+echo "Launching Intelligent Document Classification Application"
+docker-compose -f docker-compose-prod.yml up -d
