@@ -69,6 +69,7 @@ services:
   certbot:
     image: certbot/certbot:v2.5.0
     restart: unless-stopped
+    stdin_open: false
     volumes:
       - /var/www/certbot/:/var/www/certbot/
       - /etc/letsencrypt/:/etc/letsencrypt/
