@@ -26,7 +26,7 @@ path="/etc/letsencrypt/live/app.${IP_PUBLIC}.nip.io"
 mkdir -p "$path"
 
 echo "Generating Self Signed Certificate"
-openssl req -x509 -nodes -newkey rsa:4096 -days 1000 -keyout '$path/privkey.pem' -out '$path/fullchain.pem' -subj '/CN=localhost'
+openssl req -x509 -nodes -newkey rsa:4096 -days 1000 -keyout "${path}/privkey.pem" -out "${path}/fullchain.pem" -subj "/CN=localhost"
 
 if [ $? -eq 0 ] 
 then 
@@ -62,5 +62,5 @@ else
   rm -r -f /etc/letsencrypt/
   mkdir -p "$path"
 
-  openssl req -x509 -nodes -newkey rsa:4096 -days 1000 -keyout '$path/privkey.pem' -out '$path/fullchain.pem' -subj '/CN=localhost'
+  openssl req -x509 -nodes -newkey rsa:4096 -days 1000 -keyout "${path}/privkey.pem" -out "${path}/fullchain.pem" -subj "/CN=localhost"
 fi
