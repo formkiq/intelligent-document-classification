@@ -50,6 +50,8 @@ echo "Generating Lets Encrypt Certificate"
 rm -r -f /etc/letsencrypt/
 docker run -it --rm -v /var/www/certbot/:/var/www/certbot/ -v /etc/letsencrypt/:/etc/letsencrypt/ certbot/certbot certonly --webroot --register-unsafely-without-email --agree-tos --webroot-path=/var/www/certbot/ -d "app.${IP_PUBLIC}.nip.io"
 
+echo "Let's Encrypt Result: $?"
+
 if [ $? -eq 0 ] 
 then 
   echo "Successfully created domain certificate"
