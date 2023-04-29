@@ -62,6 +62,3 @@ else
 
   openssl req -x509 -nodes -newkey rsa:4096 -days 1000 -keyout '$path/privkey.pem' -out '$path/fullchain.pem' -subj '/CN=localhost'
 fi
-
-echo "Launching Intelligent Document Classification Application"
-docker-compose -f docker-compose-prod.yml up -d
