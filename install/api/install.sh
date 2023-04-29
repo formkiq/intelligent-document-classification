@@ -1,9 +1,5 @@
 #!/bin/bash
 
-exec 3>&1 4>&2
-trap 'exec 2>&4 1>&3' 0 1 2 3
-exec 1>/tmp/log.out 2>/tmp/err.log &1
-
 yum -y update
 
 yum -y install docker git
@@ -32,7 +28,7 @@ docker-compose -f docker-compose-prod.yml run --rm --entrypoint "\
   openssl req -x509 -nodes -newkey rsa:4096 -days 1000\
     -keyout '$path/privkey.pem' \
     -out '$path/fullchain.pem' \
-    -subj '/CN=localhost'" certbot
+    -subj '/CN=localhost'" certbot > /tmp/self_signed.txt 2> /tmp/self_signed_err.txt
 
 echo "Building Docker Project"
 docker-compose -f docker-compose-prod.yml build --build-arg SERVER_NAME="app.${IP_PUBLIC}.nip.io"
