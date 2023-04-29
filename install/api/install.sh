@@ -36,10 +36,10 @@ else
 fi
 
 echo "Building Docker Project"
-docker-compose -f docker-compose-prod.yml build --build-arg SERVER_NAME="app.${IP_PUBLIC}.nip.io"
+docker-compose -f docker-compose-prod.yml build --build-arg SERVER_NAME="app.${IP_PUBLIC}.nip.io" > /tmp/build.txt 2>/tmp/builderr.txt
 
 echo "Launching Docker Project"
-docker-compose -f docker-compose-prod.yml up -d
+docker-compose -f docker-compose-prod.yml up -d > /tmp/up.txt 2>/tmp/uperr.txt
 
 echo "Generating Lets Encrypt Certificate"
 rm -r -f /etc/letsencrypt/
