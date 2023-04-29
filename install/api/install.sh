@@ -8,9 +8,8 @@ curl -L https://github.com/docker/compose/releases/download/1.22.0/docker-compos
 
 chmod +x /usr/local/bin/docker-compose
 
-# git clone https://github.com/formkiq/intelligent-document-classification.git
-#usermod -a -G docker ${USER}
-#newgrp docker
+git clone https://github.com/formkiq/intelligent-document-classification.git
+git checkout --track origin/v1
 
 systemctl enable docker.service
 
