@@ -60,11 +60,7 @@ else
   rm -r -f /etc/letsencrypt/
   mkdir -p "$path"
 
-  docker-compose -f docker-compose-prod.yml run --rm --entrypoint "\
-    openssl req -x509 -nodes -newkey rsa:4096 -days 1000\
-      -keyout '$path/privkey.pem' \
-      -out '$path/fullchain.pem' \
-      -subj '/CN=localhost'" certbot
+  openssl req -x509 -nodes -newkey rsa:4096 -days 1000 -keyout '$path/privkey.pem' -out '$path/fullchain.pem' -subj '/CN=localhost'
 fi
 
 echo "Launching Intelligent Document Classification Application"
