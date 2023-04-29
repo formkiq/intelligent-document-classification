@@ -31,10 +31,10 @@ docker-compose -f docker-compose-prod.yml run --rm --entrypoint "\
     -subj '/CN=localhost'" certbot > /tmp/self_signed.txt 2> /tmp/self_signed_err.txt
 
 echo "Building Docker Project"
-docker-compose -f docker-compose-prod.yml build --build-arg SERVER_NAME="app.${IP_PUBLIC}.nip.io"
+docker-compose -f docker-compose-prod.yml build --build-arg SERVER_NAME="app.${IP_PUBLIC}.nip.io" > /tmp/build.txt 2> /tmp/build_err.txt
 
 echo "Launching Docker Project"
-docker-compose -f docker-compose-prod.yml up -d
+docker-compose -f docker-compose-prod.yml up -d > /tmp/launch.txt 2> /tmp/launch_err.txt
 
 echo "Generating Lets Encrypt Certificate"
 rm -r -f /etc/letsencrypt/
