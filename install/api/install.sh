@@ -48,5 +48,5 @@ docker run -it --rm -v /var/www/certbot/:/var/www/certbot/ -v /etc/letsencrypt/:
 
 # docker-compose -f docker-compose-prod.yml down 
 
-# echo "Launching Intelligent Document Classification Application"
+echo "Launching Intelligent Document Classification Application"
 # docker-compose -f docker-compose-prod.yml up -d
