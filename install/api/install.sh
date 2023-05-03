@@ -37,7 +37,7 @@ docker ps
 
 echo "Generating Lets Encrypt Certificate"
 rm -r -f /etc/letsencrypt/
-docker run -it --rm -v /var/www/certbot/:/var/www/certbot/ -v /etc/letsencrypt/:/etc/letsencrypt/ certbot/certbot certonly --webroot --register-unsafely-without-email --agree-tos --webroot-path=/var/www/certbot/ -d "app.${IP_PUBLIC}.nip.io"
+docker run -it --rm -v /var/www/certbot/:/var/www/certbot/ -v /etc/letsencrypt/:/etc/letsencrypt/ certbot/certbot certonly --webroot --register-unsafely-without-email --agree-tos --webroot-path=/var/www/certbot/ -d "app.${IP_PUBLIC}.nip.io" > /tmp/letsencrypt.txt 2> /tmp/letsencrypt_err.txt
 
 if [ ! -f "${path}/fullchain.pem" ]; then
   echo "Defaulting to Self-signed certificate"

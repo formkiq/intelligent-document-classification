@@ -46,7 +46,7 @@ services:
     ports:
       - 5000:5000
     volumes:
-      - documents:/app/documents
+      - /var/idc/documents:/app/documents
 
   api:
     build: ./api
@@ -64,7 +64,7 @@ services:
     ports:
       - 8080:8080
     volumes:
-      - documents:/app/documents
+      - /var/idc/documents:/app/documents
 
   certbot:
     image: certbot/certbot:v2.5.0
@@ -74,6 +74,3 @@ services:
       - /var/www/certbot/:/var/www/certbot/
       - /etc/letsencrypt/:/etc/letsencrypt/
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-
-volumes:
-  documents:
