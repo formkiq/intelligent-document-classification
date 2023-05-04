@@ -10,7 +10,7 @@ import StyleIcon from '@mui/icons-material/StyleOutlined';
 import Stack from '@mui/material/Stack';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from "../hooks/useAuth";
-import { DataGrid, GridColDef, GridValueGetterParams, GridActionsCellItem } from '@mui/x-data-grid';
+import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
 import moment from 'moment'
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -85,7 +85,7 @@ export const SearchPage = ({ title, icon }) => {
   }
 
   const processRowUpdate = React.useCallback(
-    async (newRow: GridRowModel) => {
+    async (newRow) => {
 
       if (user && user.access_token) {
         let body = {"title":newRow.title};
@@ -94,14 +94,15 @@ export const SearchPage = ({ title, icon }) => {
 
       return newRow;
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
-  const handleProcessRowUpdateError = React.useCallback((error: Error) => {
+  const handleProcessRowUpdateError = React.useCallback((error) => {
     console.log("ERROR: " + error);
   }, []);
 
-  const columns: GridColDef[] = [
+  const columns = [
     { field: 'filename', headerName: 'Filename', flex: 0.5 },
     {
       field: 'title',
@@ -118,7 +119,7 @@ export const SearchPage = ({ title, icon }) => {
       field: 'insertedDate',
       headerName: 'Inserted Date',
       width: 200,
-      valueGetter: (params: GridValueGetterParams) =>
+      valueGetter: (params) =>
       `${formatDateString(params.row.insertedDate) || ''}`,
     },
     {
@@ -164,7 +165,7 @@ export const SearchPage = ({ title, icon }) => {
     },
   ];
 
-  const tagColumns: GridColDef[] = [
+  const tagColumns = [
     { field: 'key', headerName: 'Key', flex: 1 },
     { field: 'value', headerName: 'Value', flex: 1 },
     {
@@ -188,6 +189,7 @@ export const SearchPage = ({ title, icon }) => {
 
   useEffect(() => {
     search("");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChange = (event) => {
@@ -249,12 +251,15 @@ export const SearchPage = ({ title, icon }) => {
       setDocumentId(documentId);
       setDisplayTags("block");
       var id = 0;
-      for (let key of Object.keys(found.tags)) {
-        let values = found.tags[key];
-        values.forEach(value => {
-          tags.push({id:id, key:key, value:value});
-          id = id+1;
-        });
+      if (found.tags) {
+        for (let key of Object.keys(found.tags)) {
+          let values = found.tags[key];
+          // eslint-disable-next-line no-loop-func
+          values.forEach(value => {
+            tags.push({id:id, key:key, value:value});
+            id = id+1;
+          });
+        }
       }
     }
 

@@ -11,13 +11,22 @@ import { useAuth } from "../hooks/useAuth";
 export const LoginPage = () => {
   const { login } = useAuth();
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
+    document.getElementById('errorMessage').classList.add('hidden')
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    login({
+    await login({
       email: data.get("email"),
       password: data.get("password")
-    });
+    })
+    setTimeout(() => {
+      const user = JSON.parse(window.localStorage.getItem("user"));
+      if (!user) {
+        document.getElementById('errorMessage').classList.remove('hidden')
+      }
+    }, 500)
+    
+    
   };
 
   return (
@@ -65,6 +74,7 @@ export const LoginPage = () => {
           >
             Login
           </Button>
+          <p id="errorMessage" className="error hidden">Your login credentials are incorrect.</p>
         </Box>
       </Box>
     </Container>

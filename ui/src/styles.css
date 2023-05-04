@@ -12,6 +12,15 @@ code {
     monospace;
 }
 
+.hidden {
+  display: none;
+}
+
+.error {
+  font-weight: bold;
+  color: #9a4b16
+}
+
 img.logo {
   padding: 6px;
   margin-right: 24px;

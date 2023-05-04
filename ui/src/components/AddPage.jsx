@@ -55,6 +55,9 @@ export const AddPage = ({ title, icon }) => {
         <Typography component="h1" variant="h5">
           {title}
         </Typography>
+        <p>
+          (PDF or image files only)
+        </p>
 
         <section className="container dropzone">
           <Dropzone onDrop={handleFileUpload}>
