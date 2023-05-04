@@ -59,8 +59,8 @@ services:
       - elasticsearch.url=http://${AZL_IP}:9200
       - api.ml.url=http://apiml:5000
       - kafka.bootstrap.servers=http://kafka:9092
-      - api.username=${API_USERNAME}
-      - api.password=${API_PASSWORD}
+      - api.username=${UI_USERNAME}
+      - api.password=${UI_PASSWORD}
     ports:
       - 8080:8080
     volumes:
