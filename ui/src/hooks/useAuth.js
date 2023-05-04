@@ -9,7 +9,6 @@ export const AuthProvider = ({ children, userData }) => {
   const navigate = useNavigate();
 
   const login = async (data) => {
-
     fetch('/api/login', {
       method: 'POST',
       body: JSON.stringify({"username":data.email, "password": data.password}),
@@ -37,6 +36,7 @@ export const AuthProvider = ({ children, userData }) => {
       login,
       logout
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [user]
   );
 
