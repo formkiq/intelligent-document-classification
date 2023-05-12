@@ -9,7 +9,7 @@ Intelligent Document Classification is an web-based document classification appl
 
 <div align="center" style="margin: 30px;">
 <a href="https://formkiq.com/">
-  <img src="https://github.com/formkiq/intelligent-document-classification/raw/v1/docs/architecture/formkiq_automated_document_classification.png" style="width:600px;" align="center" />
+  <img src="https://github.com/formkiq/intelligent-document-classification/raw/main/docs/architecture/formkiq_automated_document_classification.png" style="width:600px;" align="center" />
 </a>
 <br />
 <br />
