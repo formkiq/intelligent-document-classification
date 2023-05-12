@@ -1,0 +1,87 @@
+plugins {
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("io.micronaut.crac") version "3.7.7"
+    id("io.micronaut.application") version "3.7.7"
+    id("io.micronaut.aot") version "3.7.7"
+    id("io.micronaut.test-resources") version "3.7.7"
+    id("com.github.ben-manes.versions") version "0.46.0"
+}
+
+version = "0.1"
+group = "com.formkiq.idc"
+
+repositories {
+    mavenCentral()
+}
+
+micronaut {
+    version = "3.8.8"
+}
+
+dependencies {
+
+	annotationProcessor("io.micronaut.security:micronaut-security-annotations")
+    annotationProcessor("io.micronaut:micronaut-http-validation")
+    
+    implementation("io.projectreactor:reactor-core:3.5.4")
+    implementation("io.micronaut:micronaut-http-client")
+    implementation("io.micronaut:micronaut-jackson-databind")
+    implementation("io.micronaut.security:micronaut-security-jwt")
+    implementation("io.micronaut.crac:micronaut-crac")
+    implementation("io.micronaut.kafka:micronaut-kafka")
+    implementation("jakarta.annotation:jakarta.annotation-api")
+    runtimeOnly("ch.qos.logback:logback-classic")
+    compileOnly("org.graalvm.nativeimage:svm")
+
+    implementation("io.micronaut:micronaut-validation")
+    implementation("net.sourceforge.tess4j:tess4j:5.7.0")
+	implementation("org.slf4j:slf4j-simple:2.0.6")
+    implementation("com.google.code.gson:gson:2.10.1")
+    
+    implementation 'co.elastic.clients:elasticsearch-java:8.7.0'
+    
+    testImplementation("org.testcontainers:kafka:1.18.0")
+	testImplementation("org.testcontainers:elasticsearch:1.18.0")
+    
+    testImplementation("org.mock-server:mockserver-netty:5.15.0")
+    testImplementation("io.micronaut.test:micronaut-test-rest-assured")
+}
+
+application {
+    mainClass.set("com.formkiq.idc.Application")
+}
+java {
+    
+    toolchain {
+       languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+graalvmNative.toolchainDetection = false
+micronaut {
+    runtime("netty")
+    testRuntime("junit5")
+    processing {
+        incremental(true)
+        annotations("com.formkiq.idc.*")
+    }
+    testResources {
+        sharedServer = true
+    }
+    aot {
+        // Please review carefully the optimizations enabled below
+        // Check https://micronaut-projects.github.io/micronaut-aot/latest/guide/ for more details
+        optimizeServiceLoading = true
+        convertYamlToJava = true
+        precomputeOperations = true
+        cacheEnvironment = true
+        optimizeClassLoading = true
+        deduceEnvironment = true
+        optimizeNetty = true
+    }
+}
+
+// use JUnit 5 platform
+test {
+    useJUnitPlatform()
+}

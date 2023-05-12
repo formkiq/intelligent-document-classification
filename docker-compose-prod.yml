@@ -1,0 +1,76 @@
+version: "3.7"
+
+services:
+
+  ui:
+    restart: unless-stopped
+    build: 
+      context: ./ui
+      args:
+        SERVER_NAME: app.${IP_PUBLIC}.nip.io
+    depends_on:
+      - api
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/www/certbot/:/var/www/certbot/
+      - /etc/letsencrypt/:/etc/letsencrypt/
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  zookeeper1:
+    restart: unless-stopped
+    image: zookeeper:3.8.1-temurin
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zookeeper1:2888:3888;2181
+    ports:
+      - 22181:2181
+
+  kafka:
+    build: 
+      context: ./kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper1
+    ports:
+      - 9092:9092
+
+  apiml:
+    build: ./api_ml
+    restart: unless-stopped
+    environment:
+      - STORAGE_DIRECTORY=/app/documents
+    security_opt:
+      - seccomp:unconfined
+    ports:
+      - 5000:5000
+    volumes:
+      - /var/idc/documents:/app/documents
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    depends_on:
+      - apiml
+      - kafka
+    environment:
+      - storage.directory=/app/documents
+      - elasticsearch.url=http://${AZL_IP}:9200
+      - api.ml.url=http://apiml:5000
+      - kafka.bootstrap.servers=http://kafka:9092
+      - api.username=${UI_USERNAME}
+      - api.password=${UI_PASSWORD}
+    ports:
+      - 8080:8080
+    volumes:
+      - /var/idc/documents:/app/documents
+
+  certbot:
+    image: certbot/certbot:v2.5.0
+    restart: unless-stopped
+    stdin_open: false
+    volumes:
+      - /var/www/certbot/:/var/www/certbot/
+      - /etc/letsencrypt/:/etc/letsencrypt/
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"

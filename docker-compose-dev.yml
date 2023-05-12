@@ -1,0 +1,80 @@
+version: "3.7"
+
+services:
+
+  ui:
+    build: 
+      context: ./ui
+      args:
+        NGINX_CONFIG: nginx-dev.conf
+    depends_on:
+      - api
+    ports:
+      - 80:80
+
+  zookeeper1:
+    image: zookeeper:3.8.1-temurin
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zookeeper1:2888:3888;2181
+    ports:
+      - 22181:2181
+
+  kafka:
+    build: 
+      context: ./kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper1
+    ports:
+      - 9092:9092
+
+  apiml:
+    build: ./api_ml
+    environment:
+      - STORAGE_DIRECTORY=/app/documents
+    ports:
+      - 5005:5005
+    volumes:
+      - documents:/app/documents
+
+  api:
+    build: ./api
+    depends_on:
+      - elasticsearch
+      - apiml
+      - kafka
+    environment:
+      - storage.directory=/app/documents
+      - elasticsearch.url=http://elasticsearch:9200
+      - api.ml.url=http://apiml:5005
+      - kafka.bootstrap.servers=http://kafka:9092
+      - api.username=admin
+      - api.password=password
+    ports:
+      - 8080:8080
+    volumes:
+      - documents:/app/documents
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+    ports:
+      - 9200:9200
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+      - cluster.name=es-docker-cluster
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
+#  kibana:
+#    image: kibana:8.2.2
+#    ports:
+#      - target: 5601
+#        published: 5601
+#    depends_on:
+#      - elasticsearch
+
+volumes:
+  documents:
+  elasticsearch-data:
