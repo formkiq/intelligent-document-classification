@@ -1,5 +1,11 @@
 #!/bin/bash
 
+#####################################################################
+#
+# This script Installs the Intelligent Document Classification API
+#
+#####################################################################
+
 yum -y update
 
 yum -y install docker git
