@@ -14,7 +14,7 @@ RUN ./gradlew build -x test
 
 FROM --platform=linux/amd64 eclipse-temurin:17-jre-alpine
 
-RUN apk add --no-cache tesseract-ocr
+RUN apk add --no-cache tesseract-ocr tesseract-ocr-data-eng
 
 WORKDIR /home/app
 COPY --from=build /workspace/app/build/docker/main/layers/libs /home/app/libs
