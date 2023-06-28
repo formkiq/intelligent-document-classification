@@ -5,7 +5,7 @@ ENV kafka_bin_version=2.12-$KAFKA_VERSION
 
 RUN apk add --no-cache bash curl ca-certificates \
   && mkdir -p /opt/kafka \
-  && curl -SLs "https://downloads.apache.org/kafka/${KAFKA_VERSION}/kafka_2.13-${KAFKA_VERSION}.tgz" | tar -xzf - --strip-components=1 -C /opt/kafka \
+  && curl -SLs "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_2.13-${KAFKA_VERSION}.tgz" | tar -xzf - --strip-components=1 -C /opt/kafka \
   && rm -rf /var/cache/apk/*
 
 WORKDIR /opt/kafka
